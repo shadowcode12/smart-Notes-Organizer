@@ -88,10 +88,10 @@ export function bindAuthForms() {
     event.preventDefault();
     const email = form.querySelector('#email')?.value.trim(); const password = form.querySelector('#password')?.value || ''; const name = sanitizeText(form.querySelector('#name')?.value || '');
     if (!email || password.length < 6 || (location.pathname.endsWith('signup.html') && !name)) { message('Please complete all fields. Passwords must be at least 6 characters.'); return; }
-    try { message(localMode ? 'Using local mode…' : 'Working…', false); if (location.pathname.endsWith('signup.html')) await signUp(email, password, name); else await logIn(email, password); location.href = resolvePagePath('index.html'); }
+    try { message(localMode ? 'Using local mode…' : 'Working…', false); if (location.pathname.endsWith('signup.html')) await signUp(email, password, name); else await logIn(email, password); location.href = resolvePagePath('dashboard.html'); }
     catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message); }
   });
-  document.querySelector('[data-google-signin]')?.addEventListener('click', async () => { try { message(localMode ? 'Continuing locally…' : 'Opening Google sign-in…', false); await signInWithGoogle(); location.href = resolvePagePath('index.html'); } catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message || 'Google sign-in failed.'); } });
+  document.querySelector('[data-google-signin]')?.addEventListener('click', async () => { try { message(localMode ? 'Continuing locally…' : 'Opening Google sign-in…', false); await signInWithGoogle(); location.href = resolvePagePath('dashboard.html'); } catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message || 'Google sign-in failed.'); } });
 }
 export function bindNavbar() {
   onUserChange(user => document.querySelectorAll('.buttons').forEach(nav => {

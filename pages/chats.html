@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chats | SmartNotes</title>
+<link rel="stylesheet" href="../css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<header><nav class="navbar"><a class="logo" href="../index.html">📝 SmartNotes</a><ul class="nav-links"><li><a href="dashboard.html">Dashboard</a></li><li><a href="notes.html">Notes</a></li><li><a href="chats.html">Chats</a></li><li><a href="templates.html">Templates</a></li><li><a href="blog.html">Blog</a></li></ul><div class="buttons"><button class="button login" type="button" data-global-search aria-label="Search study notes">🔍</button><a class="button login" href="login.html">Login</a><a class="button signup" href="signup.html">Get Started</a></div></nav></header>
+<main>
+<section class="workspace-page">
+<div class="workspace-banner"><span class="eyebrow">Study chat</span><h1>Your conversations</h1><p>Message note authors and classmates in real time.</p></div>
+<div class="chat-page">
+<aside class="chat-page-sidebar">
+<input id="conversation-search" type="search" placeholder="Search conversations" aria-label="Search conversations">
+<div id="conversation-list" class="conversation-list conversation-list-page"></div>
+</aside>
+<section class="chat-page-thread">
+<div class="chat-header chat-header-static"><div><strong>Study chat</strong><span id="chat-partner">Select a conversation</span></div></div>
+<div id="chat-messages" class="chat-messages chat-messages-page"><p class="empty-state">Choose a conversation to start chatting.</p></div>
+<form id="chat-form" class="chat-form"><input id="chat-input" type="text" placeholder="Write a message…" autocomplete="off"><button class="button primary" type="submit">Send</button></form>
+</section>
+</div>
+</section>
+</main>
+<footer><p>© 2026 SmartNotes. All Rights Reserved.</p><div><a href="dashboard.html">Dashboard</a><a href="notes.html">Notes</a><a href="templates.html">Templates</a><a href="blog.html">Blog</a></div></footer>
+<script type="module" src="../js/config/firebase-config.js"></script>
+<script type="module" src="../js/modules/auth.js"></script>
+<script type="module" src="../js/modules/notes.js"></script>
+<script type="module" src="../js/modules/support.js"></script>
+<script type="module" src="../js/modules/chat.js"></script>
+<script type="module" src="../js/script.js"></script>
+</body></html>

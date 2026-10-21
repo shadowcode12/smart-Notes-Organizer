@@ -54,4 +54,6 @@ export function resolvePagePath(targetPage) {
   return inPagesDir ? cleanPage : `pages/${cleanPage}`;
 }
 
+export const workspacePages = ['dashboard.html', 'notes.html', 'chats.html'];
+
 export default { firebaseConfig, auth, db, firebaseReady, useLocalMode, isInvalidApiKeyError, isLocalFallbackError, resolvePagePath };

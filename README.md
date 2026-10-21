@@ -62,11 +62,25 @@ Users can select or drag and drop multiple files into the upload widget. Each fi
 - A short description.
 - An optional creator support link, UPI ID, or Buy Me a Coffee URL.
 
+Selecting files previews their names and sizes with per-file remove buttons. Nothing is published until the user clicks **Publish Upload Note**, which uploads each selected file and refreshes the community feed and "My Uploaded Notes" list.
+
 Uploaded files are represented in the community feed and can be downloaded by signed-in users.
 
 ### Community notes
 
 Community notes use a Firestore `onSnapshot` listener as the source of truth when Firebase is available, so uploads and deletions appear for other users without a refresh. In local mode they are loaded from browser storage. The feed supports search, subject/file-type filters, and a logged-in **My Notes** filter.
+
+There are no seeded demo notes. When the collection is empty the grid renders a centered empty state: *"No study notes uploaded yet. Be the first student to share a resource!"* Any sample notes cached in a previous session are removed from browser storage on startup.
+
+### Authenticated workspace
+
+Signing in or signing up redirects to the student dashboard, which shows a personalized welcome banner, stat cards for uploaded notes, support received, and active chats, a quick-upload widget, recent community notes, and the user's own uploads.
+
+- **Dashboard** (`pages/dashboard.html`) — stats, quick upload, and recent notes.
+- **My Notes** (`pages/notes.html`) — upload manager, "My Uploaded Notes" grid with download, support received, and author-only delete, plus a full community browser.
+- **Chats** (`pages/chats.html`) — full-page two-column chat with a searchable conversation list on the left and a live thread on the right.
+
+While signed in, the navigation bar on every page shows **Dashboard**, **Notes**, **Chats**, **Templates**, and **Blog**. A **🔍** search button in the navbar focuses the community search field on the current page, or forwards the query to `pages/notes.html?q=...` on pages without a feed.
 
 ### Messaging
 
@@ -81,6 +95,9 @@ The support dialog offers `$0`, `$1`, `$3`, `$5`, or a custom non-negative amoun
 | Page | Path | Purpose |
 | --- | --- | --- |
 | Home | `index.html` | Product landing page, file upload widget, and community feed |
+| Dashboard | `pages/dashboard.html` | Authenticated student dashboard with stats, quick upload, and recent notes |
+| My Notes | `pages/notes.html` | Upload manager with "My Uploaded Notes" and full community browsing |
+| Chats | `pages/chats.html` | Full-screen two-column student chat workspace |
 | Features | `pages/features.html` | Detailed feature overview and community experience |
 | Templates | `pages/templates.html` | Workspace and note-template marketing page |
 | Blog | `pages/blog.html` | Productivity and study-related editorial content |
@@ -95,7 +112,7 @@ All pages share the main stylesheet and load the same Firebase, authentication, 
 2. If a usable Firebase configuration is available, the app initializes Firebase Authentication and Cloud Firestore.
 3. If Firebase is unavailable, invalid, blocked by the current host, or opened in an unsupported environment, the app switches to local mode.
 4. The page dynamically loads the feature modules through `js/script.js`.
-5. In local mode, demo notes and a welcome chat are seeded into local storage when no local demo data exists. In Firebase mode, sample notes are created only when the live `notes` collection is empty and are marked `Sample Note`.
+5. No sample notes are seeded in either mode. Cached sample notes are purged from browser storage on startup, and an empty collection renders a centered empty-state card.
 6. Authentication state controls uploads, downloads, messaging, note ownership controls, and the navigation buttons.
 7. Authenticated sign-up, sign-in, Google sign-in, and auth-state restoration synchronize `users/{uid}` with `displayName`, `email`, and `updatedAt`.
 8. Live Firestore permission or security-rule failures are surfaced to the user; they do not silently switch the app to local mode. Local fallback is reserved for missing configuration, invalid keys, or offline/network failures.
@@ -126,8 +143,11 @@ smart Notes Organizer/
 ├── index.html
 ├── pages/
 │   ├── blog.html
+│   ├── chats.html
+│   ├── dashboard.html
 │   ├── features.html
 │   ├── login.html
+│   ├── notes.html
 │   ├── signup.html
 │   └── templates.html
 ├── css/
@@ -152,10 +172,10 @@ smart Notes Organizer/
 
 - `js/config/firebase-config.js` initializes Firebase, determines whether local mode is needed, and resolves links between root and `pages/` routes.
 - `js/modules/auth.js` implements sign-up, login, Google sign-in, logout, auth state listeners, guest/auth guards, and navigation state.
-- `js/modules/notes.js` validates, sanitizes, stores, subscribes to, filters, renders, deletes, and downloads study files.
-- `js/modules/chat.js` manages chat drawer state, sanitized local threads, and Firestore message streams.
+- `js/modules/notes.js` validates, sanitizes, stores, subscribes to, filters, renders, deletes, and downloads study files, and renders the current user's uploaded notes.
+- `js/modules/chat.js` manages the chat drawer, the full-page chat workspace, sanitized local threads, and Firestore message streams.
 - `js/modules/support.js` manages free downloads, creator links, Firestore contributions, and local-mode support totals.
-- `js/script.js` wires module startup, local-only demo data, and diagnostics.
+- `js/script.js` wires module startup, authenticated navigation, global search, cached sample cleanup, and diagnostics.
 - `css/style.css` contains the shared visual system and responsive component styles.
 
 ## Getting started
@@ -253,7 +273,7 @@ The following browser data is used:
 | Chat threads | `localStorage` |
 | Support totals | `localStorage` |
 
-The app seeds sample community notes and a welcome chat so the interface can be explored without a backend. Local-mode passwords are stored in browser storage for demo purposes only and must not be used for real accounts.
+The app does not seed demo notes. Any previously cached sample notes are purged from browser storage on startup. Local-mode passwords are stored in browser storage for demo purposes only and must not be used for real accounts.
 
 ## Data model
 
@@ -426,7 +446,8 @@ Downloads require an authenticated user. In Firebase mode, verify that the note 
 - The local authentication fallback is for demos only.
 - Client-side validation does not provide server-side security.
 - Large files represented as base64 data can be inefficient and may encounter browser or Firestore quotas.
-- Community note deletion, editing, reporting, moderation, and account deletion are not implemented.
+- Community note editing, reporting, moderation, and account deletion are not implemented.
+- The full-page chat workspace lists local-mode conversations; a Firestore conversation index for all threads is not implemented.
 
 ## Potential next steps
 

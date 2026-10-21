@@ -1,30 +1,64 @@
 import('./config/firebase-config.js').then(async config => {
   const modules = await Promise.all([import('./modules/auth.js'), import('./modules/notes.js'), import('./modules/chat.js'), import('./modules/support.js')]);
   const notes = modules[1];
-  if (config.useLocalMode) seedLocalNotes();
+  purgeCachedSamples();
   notes.subscribeCommunityNotes();
-  window.SmartNotes.auth?.onUserChange(() => notes.renderCommunityFeed());
+  window.SmartNotes.auth?.onUserChange(() => { notes.renderCommunityFeed(); notes.renderMyUploadedNotes(); updateNavigation(); updateDashboardStats(); });
+  updateNavigation();
+  bindGlobalSearch();
+  applySearchQuery();
+  bindConversationSearch();
+  updateDashboardStats();
   window.runSmartNotesDiagnostics = runDiagnostics;
 }).catch(error => console.warn('SmartNotes modules unavailable:', error));
 
-const localNotesKey = 'smartnotes-local-notes';
-const localChatKey = 'smartnotes-local-chat';
-const sampleDataUrl = (content, type) => `data:${type};base64,${btoa(content)}`;
-function seedLocalNotes() {
+function applySearchQuery() {
+  const search = document.querySelector('#community-search');
+  if (!search) return;
+  const query = new URLSearchParams(window.location.search).get('q');
+  if (query) { search.value = query; search.dispatchEvent(new Event('input', { bubbles: true })); }
+}
+function bindConversationSearch() {
+  const field = document.querySelector('#conversation-search');
+  if (!field) return;
+  field.addEventListener('input', () => window.SmartNotes?.chat?.renderConversationList(field.value));
+  window.SmartNotes?.chat?.renderConversationList('');
+}
+async function updateDashboardStats() {
+  const myNotes = document.querySelector('#stat-my-notes');
+  if (!myNotes) return;
+  const user = window.SmartNotes?.auth?.currentUser?.();
+  const notes = await window.SmartNotes?.notes?.listCommunityNotes?.({}) || [];
+  const owned = user ? notes.filter(note => note.uploaderId === user.uid) : [];
+  myNotes.textContent = String(owned.length);
+  const support = document.querySelector('#stat-support');
+  if (support) support.textContent = `$${owned.reduce((total, note) => total + Number(note.supportTotal || 0), 0).toFixed(0)}`;
+  const chats = document.querySelector('#stat-chats');
+  if (chats) chats.textContent = String(Object.keys(JSON.parse(localStorage.getItem('smartnotes-local-chat') || '{}')).length);
+  const greeting = document.querySelector('#dashboard-greeting');
+  if (greeting && user) greeting.textContent = `Welcome back, ${user.displayName || user.email || 'Student'}`;
+}
+
+function purgeCachedSamples() {
   try {
-    if (JSON.parse(localStorage.getItem(localNotesKey) || '[]').length) return;
-    const now = Date.now();
-    const notes = [
-      { id: 'demo-biology-pdf', title: 'Cell Biology Revision Pack', subject: 'Biology', tags: ['sample', 'revision'], extension: 'pdf', fileName: 'cell-biology.pdf', contentType: 'application/pdf', fileDataUrl: sampleDataUrl('SmartNotes Biology Revision Pack', 'application/pdf'), size: 32, uploaderId: 'demo-alex', uploaderName: 'Alex Johnson', sample: true, createdAt: now - 4000, storageMode: 'inline', description: 'Concise revision notes covering cells, membranes, and energy.' },
-      { id: 'demo-history-pptx', title: 'Modern History Lecture Slides', subject: 'History', tags: ['sample', 'timeline'], extension: 'pptx', fileName: 'modern-history.pptx', contentType: 'text/plain', fileDataUrl: sampleDataUrl('SmartNotes History Slides', 'text/plain'), size: 30, uploaderId: 'demo-sam', uploaderName: 'Sam Patel', sample: true, createdAt: now - 3000, storageMode: 'inline', description: 'A quick timeline of major events and key historical themes.' },
-      { id: 'demo-math-docx', title: 'Calculus Formula Guide', subject: 'Mathematics', tags: ['sample', 'formulas'], extension: 'docx', fileName: 'calculus-guide.docx', contentType: 'text/plain', fileDataUrl: sampleDataUrl('SmartNotes Calculus Formula Guide', 'text/plain'), size: 34, uploaderId: 'demo-maya', uploaderName: 'Maya Chen', sample: true, createdAt: now - 2000, storageMode: 'inline', description: 'Derivatives, integrals, and exam-ready calculus formulas.' },
-      { id: 'demo-art-png', title: 'Anatomy Lab Diagram', subject: 'Health Science', tags: ['sample', 'anatomy'], extension: 'png', fileName: 'anatomy-diagram.png', contentType: 'text/plain', fileDataUrl: sampleDataUrl('SmartNotes Anatomy Diagram', 'text/plain'), size: 28, uploaderId: 'demo-noah', uploaderName: 'Noah Williams', sample: true, createdAt: now - 1000, storageMode: 'inline', description: 'A labeled anatomy diagram for quick lab revision.' }
-    ];
-    localStorage.setItem(localNotesKey, JSON.stringify(notes));
-    const chats = JSON.parse(localStorage.getItem(localChatKey) || '{}');
-    chats['local-google-user_demo-alex'] ||= [{ senderId: 'demo-alex', recipientId: 'local-google-user', text: 'Welcome to SmartNotes! Ask me anything about the study notes.', createdAt: Date.now() }];
-    localStorage.setItem(localChatKey, JSON.stringify(chats));
-  } catch (error) { console.warn('Local demo seeding skipped:', error); }
+    const key = 'smartnotes-local-notes';
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    localStorage.setItem(key, JSON.stringify(notes.filter(note => note?.isSample !== true && note?.sample !== true && note?.uploaderName !== 'SmartNotes team')));
+  } catch (error) { console.warn('Cached note cleanup skipped:', error); }
+}
+function pagePath(page) { return window.location.pathname.includes('/pages/') ? page : `pages/${page}`; }
+function updateNavigation() {
+  const nav = document.querySelector('.nav-links');
+  const user = window.SmartNotes?.auth?.currentUser?.();
+  if (!nav || !user) return;
+  nav.replaceChildren();
+  [['dashboard.html', 'Dashboard'], ['notes.html', 'Notes'], ['chats.html', 'Chats'], ['templates.html', 'Templates'], ['blog.html', 'Blog']].forEach(([href, label]) => { const item = document.createElement('li'); const link = document.createElement('a'); link.href = pagePath(href); link.textContent = label; item.append(link); nav.append(item); });
+}
+function bindGlobalSearch() {
+  const button = document.querySelector('[data-global-search]');
+  if (!button || button.dataset.bound) return;
+  button.dataset.bound = 'true';
+  button.addEventListener('click', () => { const query = prompt('Search study notes'); if (query === null) return; const input = document.querySelector('#community-search'); if (input) { input.value = query; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); document.querySelector('#community')?.scrollIntoView({ behavior: 'smooth' }); } else window.location.href = `${pagePath('notes.html')}?q=${encodeURIComponent(query)}`; });
 }
 function runDiagnostics() {
   const notes = JSON.parse(localStorage.getItem(localNotesKey) || '[]');
@@ -37,7 +71,8 @@ function runDiagnostics() {
     { check: 'Chat drawer binding', pass: Boolean(document.querySelector('#chat-drawer')) },
     { check: 'Community feed binding', pass: Boolean(document.querySelector('#community-feed')) },
     { check: 'Local notes available', pass: notes.length > 0, details: `${notes.length} notes` },
-    { check: 'Chat threads available', pass: Object.keys(chats).length > 0, details: `${Object.keys(chats).length} threads` }
+    { check: 'Chat threads available', pass: Object.keys(chats).length > 0, details: `${Object.keys(chats).length} threads` },
+    { check: 'No sample notes cached', pass: notes.every(note => note?.sample !== true && note?.uploaderName !== 'SmartNotes team'), details: `${notes.length} notes` }
   ];
   console.table(checks);
   return checks.every(item => item.pass);
