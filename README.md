@@ -97,6 +97,8 @@ All pages share the main stylesheet and load the same Firebase, authentication, 
 4. The page dynamically loads the feature modules through `js/script.js`.
 5. In local mode, demo notes and a welcome chat are seeded into local storage when no local demo data exists. In Firebase mode, sample notes are created only when the live `notes` collection is empty and are marked `Sample Note`.
 6. Authentication state controls uploads, downloads, messaging, note ownership controls, and the navigation buttons.
+7. Authenticated sign-up, sign-in, Google sign-in, and auth-state restoration synchronize `users/{uid}` with `displayName`, `email`, and `updatedAt`.
+8. Live Firestore permission or security-rule failures are surfaced to the user; they do not silently switch the app to local mode. Local fallback is reserved for missing configuration, invalid keys, or offline/network failures.
 
 The app does not currently use Firebase Cloud Storage. File contents are stored as data URLs:
 
@@ -239,7 +241,7 @@ Firebase client configuration values such as `apiKey` identify a web application
 
 ## Local fallback mode
 
-Local mode is selected when Firebase cannot initialize or when a Firebase/auth error indicates that the current key, domain, or environment is not usable.
+Local mode is selected only when Firebase configuration is missing/placeholder, a Firebase API key is invalid, or the browser is offline / experiences a transient network failure. With valid configuration and a reachable Firebase service, Firestore remains the primary source of truth. Permission-denied and security-rule errors are not treated as permission to use local data; they are surfaced so the deployment can be corrected.
 
 The following browser data is used:
 
@@ -257,14 +259,15 @@ The app seeds sample community notes and a welcome chat so the interface can be 
 
 ### User document
 
-Stored at `users/{uid}`:
+Stored at `users/{uid}`. The application writes the profile on sign-up and updates it after email/password login, Google login, and Firebase auth-state restoration:
 
 ```text
 displayName
 email
+updatedAt            server timestamp
 photoURL             optional
-createdAt            server timestamp
-lastLoginAt          server timestamp, Google sign-in
+createdAt            legacy/optional server timestamp
+lastLoginAt          legacy/optional server timestamp
 ```
 
 ### Note document
@@ -290,7 +293,7 @@ chunkCount           present for larger files
 
 ### Chat message
 
-Stored at `conversations/{conversationId}/messages/{messageId}`:
+Stored at `conversations/{conversationId}/messages/{messageId}` and streamed with a Firestore `onSnapshot` listener while a conversation is open:
 
 ```text
 senderId
