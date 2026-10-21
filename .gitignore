@@ -1,0 +1,15 @@
+node_modules/
+
+# Local development and editor files
+.env
+.env.*
+.vscode/
+
+# Build and coverage output
+dist/
+build/
+coverage/
+
+# Operating system files
+.DS_Store
+Thumbs.db
