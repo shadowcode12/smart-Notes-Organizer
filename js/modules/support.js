@@ -1,9 +1,27 @@
-import { resolvePagePath } from '../config/firebase-config.js';
+import { db, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
+import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-const api = window.SmartNotes ||= {}; let pendingCallback;
+const api = window.SmartNotes ||= {};
+let pendingCallback;
 const supportKey = note => `smartnotes-support-${note?.id || 'unknown'}`;
 const readSupport = note => Number(localStorage.getItem(supportKey(note)) || 0);
-export function openSupportModal(note, callback) { pendingCallback = callback; const modal = document.querySelector('#support-modal'); if (!modal) return callback?.(new Error('Support modal is unavailable.')); if (!window.SmartNotes.auth?.currentUser()) { alert('Please log in before downloading community notes.'); return; } modal.dataset.note = JSON.stringify(note || {}); modal.setAttribute('aria-hidden', 'false'); modal.classList.add('is-open'); }
-export function closeSupportModal() { const modal = document.querySelector('#support-modal'); modal?.setAttribute('aria-hidden', 'true'); modal?.classList.remove('is-open'); }
-export function bindSupportModal() { document.querySelectorAll('[data-tip]').forEach(b => b.onclick = () => { const input = document.querySelector('#custom-tip'); if (input) input.value = b.dataset.tip; }); document.querySelector('[data-close-support]')?.addEventListener('click', closeSupportModal); document.querySelector('#confirm-support')?.addEventListener('click', () => { const amount = Number(document.querySelector('#custom-tip')?.value || 0); const status = document.querySelector('#support-status'); if (!Number.isFinite(amount) || amount < 0) { if (status) status.textContent = 'Enter a valid amount.'; return; } if (status) { const notePreview = JSON.parse(document.querySelector('#support-modal')?.dataset.note || '{}'); const total = readSupport(notePreview) + amount; localStorage.setItem(supportKey(notePreview), String(total)); status.textContent = amount ? `Thanks for supporting this student with $${amount.toFixed(2)}! Total support: $${total.toFixed(2)}.` : 'Free download confirmed.'; } const note = JSON.parse(document.querySelector('#support-modal')?.dataset.note || '{}'); pendingCallback?.(null, { amount, note, supportTotal: readSupport(note) }); setTimeout(closeSupportModal, 700); }); }
+const formatLink = value => String(value || '').trim();
+export function openSupportModal(note, callback) { pendingCallback = callback; const modal = document.querySelector('#support-modal'); if (!modal) return callback?.(new Error('Support modal is unavailable.')); if (!api.auth?.currentUser()) { alert('Please log in before downloading community notes.'); return; } modal.dataset.note = JSON.stringify(note || {}); modal.setAttribute('aria-hidden', 'false'); modal.classList.add('is-open'); }
+export function closeSupportModal() { const modal = document.querySelector('#support-modal'); modal?.setAttribute('aria-hidden', 'true'); modal?.classList.remove('is-open'); pendingCallback = null; }
+async function recordContribution(note, amount) {
+  if (!amount) return;
+  const user = api.auth?.currentUser();
+  if (!(firebaseReady && db && user && !String(user.uid).startsWith('local-'))) {
+    localStorage.setItem(supportKey(note), String(readSupport(note) + amount));
+    return;
+  }
+  try {
+    await addDoc(collection(db, 'notes', note.id, 'contributions'), { amount, supporterId: user.uid, creatorId: note.uploaderId, createdAt: serverTimestamp() });
+    await updateDoc(doc(db, 'notes', note.id), { supportTotal: increment(amount) });
+  } catch (error) {
+    if (!isLocalFallbackError(error)) throw error;
+    localStorage.setItem(supportKey(note), String(readSupport(note) + amount));
+  }
+}
+export function bindSupportModal() { document.querySelectorAll('[data-tip]').forEach(button => button.addEventListener('click', () => { const input = document.querySelector('#custom-tip'); if (input) input.value = button.dataset.tip; })); document.querySelector('[data-close-support]')?.addEventListener('click', closeSupportModal); document.querySelector('#confirm-support')?.addEventListener('click', async () => { const amount = Number(document.querySelector('#custom-tip')?.value || 0); const status = document.querySelector('#support-status'); const note = JSON.parse(document.querySelector('#support-modal')?.dataset.note || '{}'); if (!Number.isFinite(amount) || amount < 0) { if (status) status.textContent = 'Enter a valid amount.'; return; } const link = formatLink(note.creatorSupportLink); try { document.querySelector('#confirm-support').disabled = true; if (amount > 0) { await recordContribution(note, amount); if (status) status.textContent = link ? `Support recorded. Pay the creator at ${link}` : 'Support recorded. Checkout is simulated because this creator did not provide a payment link.'; } else if (status) status.textContent = 'Free download confirmed.'; pendingCallback?.(null, { amount, note }); setTimeout(closeSupportModal, amount > 0 ? 1400 : 200); } catch (error) { if (status) status.textContent = error.message || 'Could not record support.'; pendingCallback?.(error); } finally { document.querySelector('#confirm-support').disabled = false; } }); }
 api.support = { openSupportModal, closeSupportModal }; bindSupportModal();

@@ -1,4 +1,4 @@
-﻿// Firebase Auth + Firestore. Cloud Storage is intentionally unused.
+// Firebase Auth + Firestore. Cloud Storage is intentionally unused on the Spark plan.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -21,15 +21,15 @@ export function isInvalidApiKeyError(error) {
 // Treat them like an invalid key so the app can continue with its local session mode.
 export function isLocalFallbackError(error) {
   const text = `${error?.code || ''} ${error?.message || ''}`.toLowerCase();
-  return isInvalidApiKeyError(error)
-    || text.includes('auth/unauthorized-domain')
-    || text.includes('unauthorized-domain')
-    || text.includes('unauthorized domain')
-    || text.includes('auth/operation-not-supported-in-this-environment')
-    || text.includes('operation-not-supported-in-this-environment');
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const transientNetworkFailure = text.includes('unavailable')
+    || text.includes('network-request-failed')
+    || text.includes('failed to fetch')
+    || text.includes('offline');
+  return isInvalidApiKeyError(error) || offline || transientNetworkFailure;
 }
 
-export const useLocalMode = placeholderPattern.test(firebaseConfig.apiKey || '') || firebaseConfig.apiKey?.length < 20;
+export const useLocalMode = placeholderPattern.test(firebaseConfig.apiKey || '') || (firebaseConfig.apiKey || '').length < 20;
 export let auth = null;
 export let db = null;
 
@@ -44,6 +44,8 @@ if (!useLocalMode) {
 }
 
 export const firebaseReady = Boolean(auth && db);
+
+export const isLiveFirebase = firebaseReady && !useLocalMode;
 
 export function resolvePagePath(targetPage) {
   const inPagesDir = window.location.pathname.includes('/pages/');

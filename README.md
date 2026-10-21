@@ -35,8 +35,11 @@ The project is currently a client-side web application. It can run in a browser 
   - Text search across titles, descriptions, subjects, authors, and tags.
   - Subject filtering.
   - File-extension filtering.
+  - A logged-in user's **My Notes** filter.
   - Authenticated downloads.
   - Author messaging.
+  - Author-only note deletion, including associated Firestore file chunks.
+- Real-time Firestore synchronization for notes and one-to-one conversations.
 - Support modal where a learner can select a free download or an optional contribution amount.
 - Responsive chat drawer for conversations with note authors.
 
@@ -57,12 +60,13 @@ Users can select or drag and drop multiple files into the upload widget. Each fi
 - A subject or category.
 - Comma-separated tags.
 - A short description.
+- An optional creator support link, UPI ID, or Buy Me a Coffee URL.
 
 Uploaded files are represented in the community feed and can be downloaded by signed-in users.
 
 ### Community notes
 
-Community notes are loaded from Firestore when Firebase is available. In local mode they are loaded from browser storage. The feed is refreshed when the search term or filters change.
+Community notes use a Firestore `onSnapshot` listener as the source of truth when Firebase is available, so uploads and deletions appear for other users without a refresh. In local mode they are loaded from browser storage. The feed supports search, subject/file-type filters, and a logged-in **My Notes** filter.
 
 ### Messaging
 
@@ -70,7 +74,7 @@ Users can open a conversation from a community note and send messages to its aut
 
 ### Support contributions
 
-The support dialog offers `$0`, `$1`, `$3`, `$5`, or a custom non-negative amount. The current implementation records support totals locally in the browser; it does not process real payments.
+The support dialog offers `$0`, `$1`, `$3`, `$5`, or a custom non-negative amount. `$0` downloads immediately. Tips are recorded as Firestore contribution documents and atomically added to the note's `supportTotal` with `increment()`. When the creator supplied a UPI ID or payment URL, it is displayed to the supporter; otherwise the UI clearly identifies the checkout as simulated. Local mode keeps contribution totals in browser storage.
 
 ## Application pages
 
@@ -91,8 +95,8 @@ All pages share the main stylesheet and load the same Firebase, authentication, 
 2. If a usable Firebase configuration is available, the app initializes Firebase Authentication and Cloud Firestore.
 3. If Firebase is unavailable, invalid, blocked by the current host, or opened in an unsupported environment, the app switches to local mode.
 4. The page dynamically loads the feature modules through `js/script.js`.
-5. Demo notes and a welcome chat are seeded into local storage when no local demo data exists.
-6. Authentication state controls uploads, downloads, messaging, and the navigation buttons.
+5. In local mode, demo notes and a welcome chat are seeded into local storage when no local demo data exists. In Firebase mode, sample notes are created only when the live `notes` collection is empty and are marked `Sample Note`.
+6. Authentication state controls uploads, downloads, messaging, note ownership controls, and the navigation buttons.
 
 The app does not currently use Firebase Cloud Storage. File contents are stored as data URLs:
 
@@ -146,10 +150,10 @@ smart Notes Organizer/
 
 - `js/config/firebase-config.js` initializes Firebase, determines whether local mode is needed, and resolves links between root and `pages/` routes.
 - `js/modules/auth.js` implements sign-up, login, Google sign-in, logout, auth state listeners, guest/auth guards, and navigation state.
-- `js/modules/notes.js` validates, reads, stores, lists, filters, renders, and downloads study files.
-- `js/modules/chat.js` manages chat drawer state, local threads, and Firestore message streams.
-- `js/modules/support.js` manages the support modal and browser-local contribution totals.
-- `js/script.js` wires the upload UI, seeds demo data, and exposes diagnostics.
+- `js/modules/notes.js` validates, sanitizes, stores, subscribes to, filters, renders, deletes, and downloads study files.
+- `js/modules/chat.js` manages chat drawer state, sanitized local threads, and Firestore message streams.
+- `js/modules/support.js` manages free downloads, creator links, Firestore contributions, and local-mode support totals.
+- `js/script.js` wires module startup, local-only demo data, and diagnostics.
 - `css/style.css` contains the shared visual system and responsive component styles.
 
 ## Getting started
@@ -414,7 +418,7 @@ Downloads require an authenticated user. In Firebase mode, verify that the note 
 - There is no application build pipeline or automated test suite.
 - The Firebase configuration currently includes a default project configuration in source.
 - Cloud Storage is intentionally not used.
-- Support contributions are simulated locally; no payment is collected.
+- Tips are recorded in Firestore, but payment collection is not integrated; creator links are displayed for external payment.
 - The UI describes AI-powered organization, but no AI classification or summarization service is wired into the current implementation.
 - The local authentication fallback is for demos only.
 - Client-side validation does not provide server-side security.
