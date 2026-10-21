@@ -1,3 +1,7 @@
+// Initialize Vercel Speed Insights
+import { injectSpeedInsights } from '@vercel/speed-insights';
+injectSpeedInsights();
+
 import('./config/firebase-config.js').then(async config => {
   const modules = await Promise.all([import('./modules/auth.js'), import('./modules/notes.js'), import('./modules/chat.js'), import('./modules/support.js')]);
   const notes = modules[1];
