@@ -1,6 +1,6 @@
 # SmartNotes
 
-SmartNotes is a responsive, multi-page study and productivity notes website. It combines a clean landing page with authentication, study-file uploads, a searchable community notes feed, student-to-student chat, and optional support contributions for note authors.
+SmartNotes is a responsive, multi-page study and productivity notes website. It combines a clean landing page with authentication, study-file uploads, a searchable community notes feed, and student-to-student chat.
 
 The project is currently a client-side web application. It can run in a browser with no backend setup by using its local fallback mode, or it can connect to Firebase Authentication and Cloud Firestore for shared accounts, notes, and conversations.
 
@@ -40,7 +40,6 @@ The project is currently a client-side web application. It can run in a browser 
   - Author messaging.
   - Author-only note deletion, including associated Firestore file chunks.
 - Real-time Firestore synchronization for notes and one-to-one conversations.
-- Support modal where a learner can select a free download or an optional contribution amount.
 - Responsive chat drawer for conversations with note authors.
 
 ### Authentication
@@ -60,7 +59,6 @@ Users can select or drag and drop multiple files into the upload widget. Each fi
 - A subject or category.
 - Comma-separated tags.
 - A short description.
-- An optional creator support link, UPI ID, or Buy Me a Coffee URL.
 
 Selecting files previews their names and sizes with per-file remove buttons. Nothing is published until the user clicks **Publish Upload Note**, which uploads each selected file and refreshes the community feed and "My Uploaded Notes" list.
 
@@ -74,10 +72,10 @@ There are no seeded demo notes. When the collection is empty the grid renders a 
 
 ### Authenticated workspace
 
-Signing in or signing up redirects to the student dashboard, which shows a personalized welcome banner, stat cards for uploaded notes, support received, and active chats, a quick-upload widget, recent community notes, and the user's own uploads.
+Signing in or signing up redirects to the student dashboard, which shows a personalized welcome banner, stat cards for uploaded notes and active chats, recent community notes, and the user's own uploads.
 
 - **Dashboard** (`pages/dashboard.html`) — stats, quick upload, and recent notes.
-- **My Notes** (`pages/notes.html`) — upload manager, "My Uploaded Notes" grid with download, support received, and author-only delete, plus a full community browser.
+- **My Notes** (`pages/notes.html`) — upload manager, "My Uploaded Notes" grid with free download and author-only delete, plus a full community browser.
 - **Chats** (`pages/chats.html`) — full-page two-column chat with a searchable conversation list on the left and a live thread on the right.
 
 While signed in, the navigation bar on every page shows **Dashboard**, **Notes**, **Chats**, **Templates**, and **Blog**. A **🔍** search button in the navbar focuses the community search field on the current page, or forwards the query to `pages/notes.html?q=...` on pages without a feed.
@@ -86,9 +84,7 @@ While signed in, the navigation bar on every page shows **Dashboard**, **Notes**
 
 Users can open a conversation from a community note and send messages to its author. Firestore conversations update in real time. Local mode stores chat threads in `localStorage`.
 
-### Support contributions
-
-The support dialog offers `$0`, `$1`, `$3`, `$5`, or a custom non-negative amount. `$0` downloads immediately. Tips are recorded as Firestore contribution documents and atomically added to the note's `supportTotal` with `increment()`. When the creator supplied a UPI ID or payment URL, it is displayed to the supporter; otherwise the UI clearly identifies the checkout as simulated. Local mode keeps contribution totals in browser storage.
+### Downloads are free and direct. Signed-in users can download a community note with one click; the existing chunked file reconstruction remains unchanged.
 
 ## Application pages
 
@@ -104,7 +100,7 @@ The support dialog offers `$0`, `$1`, `$3`, `$5`, or a custom non-negative amoun
 | Login | `pages/login.html` | Existing-user sign-in |
 | Sign up | `pages/signup.html` | New-user registration |
 
-All pages share the main stylesheet and load the same Firebase, authentication, notes, chat, support, and application modules where needed.
+All pages share the main stylesheet and load the same Firebase, authentication, notes, chat, and application modules where needed.
 
 ## How the application works
 
@@ -129,7 +125,7 @@ The app does not currently use Firebase Cloud Storage. File contents are stored 
 - Modern browser JavaScript using ES modules.
 - Firebase Authentication.
 - Cloud Firestore.
-- `localStorage` for local sessions, metadata, chat, and support totals.
+- `localStorage` for local sessions, metadata, and chat.
 - IndexedDB for larger local file contents.
 - Google Fonts Inter, loaded from Google Fonts.
 - Firebase browser modules loaded from `gstatic.com`.
@@ -159,7 +155,6 @@ smart Notes Organizer/
 │   │   ├── auth.js
 │   │   ├── chat.js
 │   │   ├── notes.js
-│   │   └── support.js
 │   └── script.js
 ├── assets/
 │   └── images/
@@ -174,7 +169,6 @@ smart Notes Organizer/
 - `js/modules/auth.js` implements sign-up, login, Google sign-in, logout, auth state listeners, guest/auth guards, and navigation state.
 - `js/modules/notes.js` validates, sanitizes, stores, subscribes to, filters, renders, deletes, and downloads study files, and renders the current user's uploaded notes.
 - `js/modules/chat.js` manages the chat drawer, the full-page chat workspace, sanitized local threads, and Firestore message streams.
-- `js/modules/support.js` manages free downloads, creator links, Firestore contributions, and local-mode support totals.
 - `js/script.js` wires module startup, authenticated navigation, global search, cached sample cleanup, and diagnostics.
 - `css/style.css` contains the shared visual system and responsive component styles.
 
@@ -398,8 +392,6 @@ Before production use:
 - Validate file size, MIME type, extension, and content server-side.
 - Add malware/content scanning for uploaded files.
 - Use a dedicated object-storage service for files rather than placing large base64 content in Firestore.
-- Add rate limiting and abuse prevention for uploads, messages, and support actions.
-- Use a real payment provider if support contributions become monetary transactions.
 - Review privacy, retention, deletion, and copyright policies for community-shared files.
 - Keep Firebase configuration environment-specific and avoid committing unrelated secrets.
 
@@ -456,7 +448,6 @@ Downloads require an authenticated user. In Firebase mode, verify that the note 
 - Add Firestore security rules and automated rules tests.
 - Add server-side upload validation and scanning.
 - Add note editing, deletion, moderation, and reporting.
-- Add real payment processing for author support.
 - Add note versioning and richer search.
 - Add an AI service for tagging, summaries, and semantic search.
 - Add unit, integration, accessibility, and end-to-end tests.

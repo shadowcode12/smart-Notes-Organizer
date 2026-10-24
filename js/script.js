@@ -1,5 +1,5 @@
 import('./config/firebase-config.js').then(async config => {
-  const modules = await Promise.all([import('./modules/auth.js'), import('./modules/notes.js'), import('./modules/chat.js'), import('./modules/support.js')]);
+  const modules = await Promise.all([import('./modules/auth.js'), import('./modules/notes.js'), import('./modules/chat.js')]);
   const notes = modules[1];
   purgeCachedSamples();
   notes.subscribeCommunityNotes();
@@ -51,8 +51,6 @@ async function updateDashboardStats() {
   const notes = await window.SmartNotes?.notes?.listCommunityNotes?.({}) || [];
   const owned = user ? notes.filter(note => note.uploaderId === user.uid) : [];
   myNotes.textContent = String(owned.length);
-  const support = document.querySelector('#stat-support');
-  if (support) support.textContent = `$${owned.reduce((total, note) => total + Number(note.supportTotal || 0), 0).toFixed(0)}`;
   const chats = document.querySelector('#stat-chats');
   if (chats) chats.textContent = String(Object.keys(JSON.parse(localStorage.getItem('smartnotes-local-chat') || '{}')).length);
   const greeting = document.querySelector('#dashboard-greeting');
@@ -87,7 +85,6 @@ function runDiagnostics() {
     { check: 'Auth API loaded', pass: Boolean(window.SmartNotes?.auth?.currentUser) },
     { check: 'Notes API loaded', pass: Boolean(window.SmartNotes?.notes?.uploadNote) },
     { check: 'Realtime notes API loaded', pass: Boolean(window.SmartNotes?.notes?.subscribeCommunityNotes) },
-    { check: 'Support modal binding', pass: Boolean(document.querySelector('#support-modal')) },
     { check: 'Chat drawer binding', pass: Boolean(document.querySelector('#chat-drawer')) },
     { check: 'Community feed binding', pass: Boolean(document.querySelector('#community-feed')) },
     { check: 'Local notes available', pass: notes.length > 0, details: `${notes.length} notes` },
