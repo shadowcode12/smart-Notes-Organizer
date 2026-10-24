@@ -3,6 +3,7 @@ import('./config/firebase-config.js').then(async config => {
   const notes = modules[1];
   purgeCachedSamples();
   notes.subscribeCommunityNotes();
+  bindDownloadDelegation(notes);
   window.SmartNotes.auth?.onUserChange(() => { notes.renderCommunityFeed(); notes.renderMyUploadedNotes(); updateNavigation(); updateDashboardStats(); });
   updateNavigation();
   bindGlobalSearch();
@@ -11,6 +12,25 @@ import('./config/firebase-config.js').then(async config => {
   updateDashboardStats();
   window.runSmartNotesDiagnostics = runDiagnostics;
 }).catch(error => console.warn('SmartNotes modules unavailable:', error));
+
+function bindDownloadDelegation(notes) {
+  if (document.documentElement.dataset.downloadDelegationBound) return;
+  document.documentElement.dataset.downloadDelegationBound = 'true';
+  document.addEventListener('click', async event => {
+    const button = event.target.closest?.('.btn-download, [data-download-note]');
+    if (!button || button.classList.contains('btn-download')) return;
+    const noteId = button.dataset.downloadNote || button.dataset.noteId;
+    if (!noteId) return;
+    event.preventDefault();
+    try {
+      await notes.downloadNoteFile(noteId);
+    } catch (error) {
+      const status = document.querySelector('.upload-status[aria-live="polite"]');
+      if (status) status.textContent = error.message;
+      else console.error(error);
+    }
+  });
+}
 
 function applySearchQuery() {
   const search = document.querySelector('#community-search');
