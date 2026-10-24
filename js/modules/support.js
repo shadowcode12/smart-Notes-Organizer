@@ -1,5 +1,5 @@
 import { db, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
-import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { addDoc, collection, doc, getDoc, getDocs, increment, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
 let pendingCallback;
@@ -16,8 +16,16 @@ async function recordContribution(note, amount) {
     return;
   }
   try {
-    await addDoc(collection(db, 'notes', note.id, 'contributions'), { amount, supporterId: user.uid, creatorId: note.uploaderId, createdAt: serverTimestamp() });
-    await updateDoc(doc(db, 'notes', note.id), { supportTotal: increment(amount) });
+    let noteId = note.firestoreDocId || note.id;
+    let noteSnapshot = await getDoc(doc(db, 'notes', noteId));
+    if (!noteSnapshot.exists() && note.id) {
+      const matches = await getDocs(query(collection(db, 'notes'), where('id', '==', note.id)));
+      noteId = matches.docs[0]?.id || '';
+      if (!noteId) throw new Error('The note could not be found.');
+      noteSnapshot = await getDoc(doc(db, 'notes', noteId));
+    }
+    await addDoc(collection(db, 'notes', noteId, 'contributions'), { amount, supporterId: user.uid, creatorId: note.uploaderId, createdAt: serverTimestamp() });
+    await updateDoc(doc(db, 'notes', noteId), { supportTotal: increment(amount) });
   } catch (error) {
     if (!isLocalFallbackError(error)) throw error;
     localStorage.setItem(supportKey(note), String(readSupport(note) + amount));
