@@ -1,6 +1,38 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Log in | SmartNotes</title><link rel="stylesheet" href="../css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></head>
-<body class="auth-body"><a class="auth-logo logo" href="../index.html">📝 SmartNotes</a><main class="auth-card"><span class="eyebrow">Welcome back</span><h1>Log in to your workspace</h1><p class="auth-copy">Pick up right where you left off.</p><form id="login-form"><label for="email">Email address</label><input id="email" name="email" type="email" placeholder="you@example.com" required><label for="password">Password</label><input id="password" name="password" type="password" placeholder="Your password" required><a class="forgot" href="signup.html">Forgot password?</a><button class="button primary" type="submit">Log in</button><button class="button google-button" type="button" data-google-signin>Continue with Google</button><p class="form-message" aria-live="polite"></p></form><p class="auth-switch">New to SmartNotes? <a href="signup.html">Create an account</a></p><nav class="auth-nav"><a href="features.html">Features</a><a href="templates.html">Templates</a><a href="blog.html">Blog</a></nav></main><script type="module" src="../js/config/firebase-config.js"></script><script type="module" src="../js/modules/auth.js"></script><script type="module" src="../js/script.js"></script></body></html>
-
-
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Log in | SmartNotes</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="auth-body">
+  <main class="auth-split-layout">
+    <section class="auth-brand-panel">
+      <a class="brand auth-logo" href="../index.html"><span class="brand-mark">▦</span><span>SmartNotes</span></a>
+      <div class="auth-brand-content">
+        <span class="eyebrow">● 100% Free Campus Knowledge Exchange</span>
+        <h2>Study smarter with verified notes from your peers.</h2>
+        <ul class="auth-values"><li>Unlimited PDF, PPTX & DOCX study note uploads</li><li>Instant 1-click free downloads with zero paywalls</li><li>Real-time 1-on-1 chat with note authors</li></ul>
+      </div>
+      <div class="auth-testimonial"><p>“SmartNotes helped me ace CS 106B and Organic Chemistry without spending a dime.”</p><small>SC　Sarah Chen · Stanford student</small></div>
+    </section>
+    <section class="auth-form-panel">
+      <div class="auth-card">
+        <span class="eyebrow">WELCOME BACK</span><h1>Log in to your workspace</h1><p class="auth-copy">Pick up right where you left off.</p>
+        <button class="button google-button" type="button" data-google-signin><svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.24a4.48 4.48 0 0 1-1.94 2.94v2.44h3.14c1.84-1.69 2.91-4.18 2.91-7.21Z"/><path fill="#34A853" d="M12 21.5c2.63 0 4.84-.87 6.45-2.36l-3.14-2.44c-.87.58-1.98.92-3.31.92-2.55 0-4.71-1.72-5.49-4.03H3.27v2.52A9.74 9.74 0 0 0 12 21.5Z"/><path fill="#FBBC05" d="M6.51 13.59A5.86 5.86 0 0 1 6.2 12c0-.55.11-1.09.31-1.59V7.89H3.27A9.74 9.74 0 0 0 2.25 12c0 1.57.38 3.05 1.02 4.11l3.24-2.52Z"/><path fill="#EA4335" d="M12 6.38c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.35 14.63 2.5 12 2.5a9.74 9.74 0 0 0-8.73 5.39l3.24 2.52C7.29 8.1 9.45 6.38 12 6.38Z"/></svg>Continue with Google</button>
+        <div class="auth-divider"><span>or continue with email</span></div>
+        <form id="login-form" class="auth-form">
+          <div class="auth-field"><label for="email">Email address</label><input id="email" name="email" type="email" placeholder="you@example.com" required></div>
+          <div class="auth-password-row"><label for="password">Password</label><a class="forgot" href="signup.html">Forgot password?</a></div>
+          <div class="auth-field"><input id="password" name="password" type="password" placeholder="Your password" required></div>
+          <button class="button primary" type="submit">Log in</button><p id="auth-error" class="form-message auth-error-message" aria-live="polite"></p>
+        </form>
+        <p class="auth-switch">Don't have an account? <a href="signup.html">Sign up free</a></p>
+        <nav class="auth-nav"><a href="../index.html">Home</a><a href="features.html">Features</a><a href="templates.html">Templates</a><a href="blog.html">Blog</a></nav>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="../js/config/firebase-config.js"></script><script type="module" src="../js/modules/auth.js"></script><script type="module" src="../js/script.js"></script>
+</body>
+</html>
