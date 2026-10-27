@@ -4,7 +4,14 @@ import('./config/firebase-config.js').then(async config => {
   purgeCachedSamples();
   notes.subscribeCommunityNotes();
   bindDownloadDelegation(notes);
-  window.SmartNotes.auth?.onUserChange(() => { notes.renderCommunityFeed(); notes.renderMyUploadedNotes(); updateNavigation(); updateDashboardStats(); });
+  window.SmartNotes.auth?.onUserChange(() => {
+    notes.renderCommunityFeed();
+    notes.renderMyUploadedNotes();
+    updateNavigation();
+    updateDashboardStats();
+    window.SmartNotes.chat?.subscribeConversations?.();
+  });
+  window.SmartNotes.chat?.subscribeConversations?.();
   updateNavigation();
   bindGlobalSearch();
   applySearchQuery();

@@ -1,11 +1,13 @@
 import { auth, db, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
 const CHAT_KEY = 'smartnotes-local-chat';
 let localMode = !firebaseReady;
 let unsubscribe;
+let unsubscribeConversations;
 let activePartner;
+let cachedFirestoreConversations = [];
 const conversationId = (a, b) => [a, b].sort().join('_');
 const activeUser = () => localMode ? api.auth?.currentUser?.() : auth?.currentUser;
 const readChats = () => { try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {}; } catch { return {}; } };
@@ -25,9 +27,20 @@ export async function sendMessage(partnerId, text) {
     chats[id] = [...(chats[id] || []), message];
     saveChats(chats);
     renderMessages(chats[id], activePartner?.partnerName || 'Student');
+    renderConversationList();
     return message;
   }
   try {
+    const convRef = doc(db, 'conversations', id);
+    await setDoc(convRef, {
+      participants: [user.uid, partnerId],
+      participantNames: {
+        [user.uid]: user.displayName || user.email || 'Student',
+        [partnerId]: activePartner?.partnerName || 'Student'
+      },
+      lastMessage: safeText,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
     return await addDoc(collection(db, 'conversations', id, 'messages'), { ...message, createdAt: serverTimestamp() });
   } catch (error) {
     if (!isLocalFallbackError(error)) throw error;
@@ -37,5 +50,85 @@ export async function sendMessage(partnerId, text) {
 }
 export function closeChat() { unsubscribe?.(); unsubscribe = null; document.querySelector('#chat-drawer')?.classList.remove('is-open'); document.querySelector('#chat-drawer')?.setAttribute('aria-hidden', 'true'); }
 export function bindChat() { document.querySelector('[data-close-chat]')?.addEventListener('click', closeChat); document.querySelector('#chat-form')?.addEventListener('submit', async event => { event.preventDefault(); const input = document.querySelector('#chat-input'); const partner = document.querySelector('.chat-page')?.dataset.partnerId || document.querySelector('#chat-drawer')?.dataset.partnerId; const button = event.currentTarget.querySelector('button[type="submit"]'); try { button.disabled = true; await sendMessage(partner, input.value); input.value = ''; } catch (error) { console.error(error); } finally { button.disabled = false; } }); }
-export function renderConversationList(search = '') { const list = document.querySelector('#conversation-list'); if (!list) return; const user = activeUser(); if (!user) return; const term = String(search || '').toLowerCase(); const threads = localMode ? Object.entries(readChats()).map(([id, messages]) => ({ id, partnerId: id.split('_').find(part => part !== user.uid), name: id.split('_').find(part => part !== user.uid) || 'Student', messages })) : []; list.replaceChildren(); const visible = threads.filter(thread => !term || thread.name.toLowerCase().includes(term) || thread.id.toLowerCase().includes(term)); if (!visible.length) { const empty = document.createElement('p'); empty.className = 'empty-state'; empty.textContent = 'No conversations yet. Message a note author to start one.'; list.append(empty); return; } visible.forEach(thread => { const item = document.createElement('button'); item.type = 'button'; item.className = 'conversation-item'; item.textContent = thread.name; item.addEventListener('click', () => openChat(thread.partnerId, thread.name)); list.append(item); }); }
-api.chat = { openChat, sendMessage, closeChat, renderConversationList }; bindChat();
+export function subscribeConversations() {
+  const user = activeUser();
+  if (!user || localMode) return () => {};
+  unsubscribeConversations?.();
+  const q = query(collection(db, 'conversations'), where('participants', 'array-contains', user.uid));
+  unsubscribeConversations = onSnapshot(q, snapshot => {
+    cachedFirestoreConversations = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+    renderConversationList();
+  }, error => {
+    if (isLocalFallbackError(error)) {
+      localMode = true;
+      renderConversationList();
+    } else {
+      console.warn('Unable to subscribe conversations:', error);
+    }
+  });
+  return unsubscribeConversations;
+}
+export function renderConversationList(search = '') {
+  const list = document.querySelector('#conversation-list');
+  if (!list) return;
+  const user = activeUser();
+  if (!user) return;
+  const term = String(search || '').toLowerCase();
+  let threads = [];
+  if (localMode) {
+    threads = Object.entries(readChats()).map(([id, messages]) => {
+      const partnerId = id.split('_').find(part => part !== user.uid) || 'Student';
+      const lastMsg = messages[messages.length - 1];
+      return {
+        id,
+        partnerId,
+        name: partnerId,
+        lastMessage: lastMsg?.text || '',
+        updatedAt: lastMsg?.createdAt || 0
+      };
+    });
+  } else {
+    threads = cachedFirestoreConversations.map(conv => {
+      const partnerId = (conv.participants || []).find(uid => uid !== user.uid) || 'Student';
+      const name = conv.participantNames?.[partnerId] || partnerId || 'Student';
+      const timestamp = conv.updatedAt?.toMillis ? conv.updatedAt.toMillis() : (conv.updatedAt || 0);
+      return {
+        id: conv.id,
+        partnerId,
+        name,
+        lastMessage: conv.lastMessage || '',
+        updatedAt: timestamp
+      };
+    });
+  }
+  threads.sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+  list.replaceChildren();
+  const visible = threads.filter(thread => !term || thread.name.toLowerCase().includes(term) || (thread.lastMessage && thread.lastMessage.toLowerCase().includes(term)));
+  if (!visible.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = 'No conversations yet. Message a note author to start one.';
+    list.append(empty);
+    return;
+  }
+  visible.forEach(thread => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'conversation-item';
+    const titleSpan = document.createElement('strong');
+    titleSpan.textContent = thread.name;
+    const msgPreview = document.createElement('span');
+    msgPreview.style.display = 'block';
+    msgPreview.style.fontSize = '11px';
+    msgPreview.style.color = 'var(--muted)';
+    msgPreview.textContent = thread.lastMessage || 'Open conversation';
+    item.append(titleSpan, msgPreview);
+    item.addEventListener('click', () => openChat(thread.partnerId, thread.name));
+    list.append(item);
+  });
+}
+api.chat = { openChat, sendMessage, closeChat, renderConversationList, subscribeConversations };
+bindChat();

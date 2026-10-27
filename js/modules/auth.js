@@ -1,5 +1,5 @@
 import { auth, db, firebaseReady, isLocalFallbackError, resolvePagePath } from '../config/firebase-config.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
@@ -28,6 +28,13 @@ function enableLocalMode(error) { if (localMode) return; localMode = true; conso
 
 export const currentUser = () => localMode ? localSession() : auth?.currentUser || null;
 export async function signUp(email, password, displayName = '') {
+  const normalizedPassword = String(password || '');
+  const hasUpper = /[A-Z]/.test(normalizedPassword);
+  const hasLower = /[a-z]/.test(normalizedPassword);
+  const hasNumberOrSymbol = /[^A-Za-z0-9]/.test(normalizedPassword) || /\d/.test(normalizedPassword);
+  if (normalizedPassword.length < 10 || !hasUpper || !hasLower || !hasNumberOrSymbol) {
+    throw new Error('Password must be at least 10 characters and contain at least one uppercase letter, one lowercase letter, and one number or symbol.');
+  }
   if (localMode) {
     const users = localUsers();
     if (users.some(user => user.email.toLowerCase() === email.toLowerCase())) throw new Error('An account with this email already exists.');
@@ -39,6 +46,11 @@ export async function signUp(email, password, displayName = '') {
     const safeName = sanitizeText(displayName);
     if (safeName) await updateProfile(result.user, { displayName: safeName });
     await setDoc(doc(db, 'users', result.user.uid), { displayName: safeName, email, updatedAt: serverTimestamp() }, { merge: true });
+    try {
+      await sendEmailVerification(result.user);
+    } catch (verErr) {
+      console.warn('Could not send verification email:', verErr);
+    }
     return result.user;
   } catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); return signUp(email, password, displayName); }
 }
@@ -93,24 +105,58 @@ export async function requestPasswordReset(email) {
   const normalizedEmail = String(email || '').trim();
   if (!normalizedEmail) throw new Error('Enter your email address first.');
   if (localMode) {
-    message('Password reset email sent! Check your inbox.', false);
+    message('Local demo mode is active: password reset emails require live Firebase Authentication and cannot be sent for local-only browser accounts.', true);
     return;
   }
   try {
     await sendPasswordResetEmail(auth, normalizedEmail);
     message('Password reset email sent! Check your inbox.', false);
   } catch (error) {
-    if (isLocalFallbackError(error)) { enableLocalMode(error); message('Password reset email sent! Check your inbox.', false); return; }
+    if (isLocalFallbackError(error)) {
+      enableLocalMode(error);
+      message('Local demo mode is active: password reset emails require live Firebase Authentication and cannot be sent for local-only browser accounts.', true);
+      return;
+    }
     throw error;
   }
+}
+export async function resendVerificationEmail() {
+  const user = auth?.currentUser;
+  if (!user) throw new Error('No signed-in user found.');
+  if (localMode) {
+    message('Local demo mode is active: email verification is only available with live Firebase Authentication.', true);
+    return;
+  }
+  await sendEmailVerification(user);
+  message('Verification email resent! Check your inbox.', false);
 }
 export function bindAuthForms() {
   const form = document.querySelector('.auth-card form'); if (!form) return;
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const email = form.querySelector('#email')?.value.trim(); const password = form.querySelector('#password')?.value || ''; const name = sanitizeText(form.querySelector('#name')?.value || '');
-    if (!email || password.length < 6 || (location.pathname.endsWith('signup.html') && !name)) { message('Please complete all fields. Passwords must be at least 6 characters.'); return; }
-    try { message(localMode ? 'Using local mode…' : 'Working…', false); if (location.pathname.endsWith('signup.html')) await signUp(email, password, name); else await logIn(email, password); location.href = resolvePagePath('dashboard.html'); }
+    if (location.pathname.endsWith('signup.html')) {
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasNumberOrSymbol = /[^A-Za-z0-9]/.test(password) || /\d/.test(password);
+      if (!email || !name || password.length < 10 || !hasUpper || !hasLower || !hasNumberOrSymbol) {
+        message('Please complete all fields. Passwords must be at least 10 characters with uppercase, lowercase, and a number or symbol.');
+        return;
+      }
+    } else if (!email || !password) {
+      message('Please enter your email and password.');
+      return;
+    }
+    try {
+      message(localMode ? 'Using local mode…' : 'Working…', false);
+      if (location.pathname.endsWith('signup.html')) {
+        await signUp(email, password, name);
+        message('Account created! We sent a verification link to your email.', false);
+      } else {
+        await logIn(email, password);
+      }
+      setTimeout(() => { location.href = resolvePagePath('dashboard.html'); }, 1200);
+    }
     catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message); }
   });
   document.querySelector('[data-google-signin]')?.addEventListener('click', async () => { try { message(localMode ? 'Continuing locally…' : 'Opening Google sign-in…', false); await signInWithGoogle(); location.href = resolvePagePath('dashboard.html'); } catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message || 'Google sign-in failed.'); } });
@@ -147,6 +193,6 @@ export function bindNavbar() {
     nav.append(name, logout);
   }));
 }
-api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, isLocalMode: () => localMode };
+api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, resendVerificationEmail, isLocalMode: () => localMode };
 initAuthGuard();
 bindAuthForms(); bindNavbar();

@@ -2,6 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js';
 
 export const firebaseConfig = window.SMART_NOTES_FIREBASE_CONFIG || {
   apiKey: 'AIzaSyBE9f1kFy2Mgp6p7HGrVPSs5_mUkyLvOGk',
@@ -32,12 +33,25 @@ export function isLocalFallbackError(error) {
 export const useLocalMode = placeholderPattern.test(firebaseConfig.apiKey || '') || (firebaseConfig.apiKey || '').length < 20;
 export let auth = null;
 export let db = null;
+export let appCheck = null;
 
 if (!useLocalMode) {
   try {
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
+
+    const recaptchaSiteKey = window.FIREBASE_RECAPTCHA_SITE_KEY || window.SMART_NOTES_RECAPTCHA_SITE_KEY;
+    if (recaptchaSiteKey && typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
+      try {
+        appCheck = initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+          isTokenAutoRefreshEnabled: true
+        });
+      } catch (checkErr) {
+        console.warn('App Check initialization bypassed:', checkErr);
+      }
+    }
   } catch (error) {
     console.warn('Firebase initialization failed. SmartNotes is using local mode.', error);
   }

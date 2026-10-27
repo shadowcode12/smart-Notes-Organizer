@@ -1,10 +1,11 @@
 import { auth, db, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, setDoc, doc, getDocs, where, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
 const ext = name => name.split('.').pop().toLowerCase();
-const MAX_INLINE_LENGTH = 700000;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const CHUNK_BYTES = 500 * 1024;
+const MAX_CHUNKS = 15;
 const acceptedExtensions = new Set(['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'webp']);
 const NOTES_KEY = 'smartnotes-local-notes';
 let localMode = !firebaseReady;
@@ -26,10 +27,76 @@ const readLocalFile = async noteId => { const database = await openFileDb(); con
 const deleteLocalChunks = async noteId => { const database = await openFileDb(); await new Promise((resolve, reject) => { const tx = database.transaction(['chunks', 'smartnotes_files'], 'readwrite'); tx.objectStore('chunks').delete(noteId); tx.objectStore('smartnotes_files').delete(noteId); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); }); database.close(); };
 const fileToDataUrl = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error(`Could not read ${file.name}.`)); reader.readAsDataURL(file); });
 const enableLocalMode = error => { localMode = true; console.warn('Notes switched to local mode.', error); };
-const noteMetadata = (file, dataUrl, metadata) => { const user = activeUser(); const isChunked = dataUrl.length > MAX_INLINE_LENGTH; return { id: crypto.randomUUID(), title: sanitizeText(metadata.title || file.name, 120), description: sanitizeText(metadata.description, 500), subject: sanitizeText(metadata.subject, 80), tags: safeTags(metadata.tags), fileName: sanitizeText(file.name, 180), mimeType: file.type || 'application/octet-stream', fileSize: file.size, extension: ext(file.name), size: file.size, contentType: file.type || 'application/octet-stream', uploaderId: user.uid, uploaderName: sanitizeText(user.displayName || user.email || 'Student', 120), createdAt: Date.now(), storageMode: isChunked ? 'chunks' : 'inline', isChunked, chunkCount: isChunked ? Math.ceil((String(dataUrl).split(',')[1] || '').length / CHUNK_BYTES) : 0, fileDataUrl: isChunked ? '' : dataUrl }; };
-async function saveLargeFileChunks(noteId, dataUrl) { const payload = String(dataUrl).split(',')[1] || ''; const chunkCount = Math.ceil(payload.length / CHUNK_BYTES); const chunks = Array.from({ length: chunkCount }, (_, index) => payload.slice(index * CHUNK_BYTES, (index + 1) * CHUNK_BYTES)); await storeLocalFile(noteId, dataUrl); if (localMode) { await storeLocalChunks(noteId, chunks); return chunkCount; } for (let index = 0; index < chunkCount; index += 1) await setDoc(doc(db, 'notes', noteId, 'chunks', String(index)), { index, data: chunks[index] }); return chunkCount; }
+const noteMetadata = (file, dataUrl, metadata) => {
+  const user = activeUser();
+  const payload = String(dataUrl).split(',')[1] || '';
+  const chunkCount = Math.ceil(payload.length / CHUNK_BYTES);
+  if (file.size > MAX_FILE_SIZE) throw new Error('File size exceeds the 5 MB maximum limit.');
+  if (chunkCount > MAX_CHUNKS) throw new Error('File is too large when chunked.');
+  return {
+    id: crypto.randomUUID(),
+    title: sanitizeText(metadata.title || file.name, 120),
+    description: sanitizeText(metadata.description, 500),
+    subject: sanitizeText(metadata.subject, 80),
+    tags: safeTags(metadata.tags),
+    fileName: sanitizeText(file.name, 180),
+    mimeType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    size: file.size,
+    extension: ext(file.name),
+    contentType: file.type || 'application/octet-stream',
+    uploaderId: user.uid,
+    uploaderName: sanitizeText(user.displayName || user.email || 'Student', 120),
+    createdAt: Date.now(),
+    storageMode: 'chunks',
+    isChunked: true,
+    chunkCount
+  };
+};
+async function saveLargeFileChunks(noteId, dataUrl) {
+  const payload = String(dataUrl).split(',')[1] || '';
+  const chunkCount = Math.ceil(payload.length / CHUNK_BYTES);
+  const chunks = Array.from({ length: chunkCount }, (_, index) => payload.slice(index * CHUNK_BYTES, (index + 1) * CHUNK_BYTES));
+  await storeLocalFile(noteId, dataUrl);
+  if (localMode) {
+    await storeLocalChunks(noteId, chunks);
+    return chunkCount;
+  }
+  const batch = writeBatch(db);
+  for (let index = 0; index < chunkCount; index += 1) {
+    const chunkRef = doc(db, 'notes', noteId, 'chunks', String(index));
+    batch.set(chunkRef, { index, data: chunks[index] });
+  }
+  await batch.commit();
+  return chunkCount;
+}
 const mapNoteSnapshot = docSnap => { const data = docSnap.data(); return { ...data, localId: data.id || docSnap.id, id: docSnap.id, firestoreDocId: docSnap.id }; };
-export async function uploadNote(file, metadata = {}) { if (!activeUser()) throw new Error('Sign in to upload notes.'); if (!acceptedExtensions.has(ext(file.name))) throw new Error('This file type is not supported.'); const dataUrl = await fileToDataUrl(file); const note = noteMetadata(file, dataUrl, metadata); if (localMode) { saveNotes([note, ...readNotes()]); if (note.isChunked) await saveLargeFileChunks(note.id, dataUrl); else await storeLocalFile(note.id, dataUrl); return note; } try { const noteRef = doc(collection(db, 'notes')); note.id = noteRef.id; note.firestoreDocId = noteRef.id; await setDoc(noteRef, { ...note, createdAt: serverTimestamp() }); if (note.isChunked) await saveLargeFileChunks(noteRef.id, dataUrl); return note; } catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); return uploadNote(file, metadata); } }
+export async function uploadNote(file, metadata = {}) {
+  if (!activeUser()) throw new Error('Sign in to upload notes.');
+  if (!acceptedExtensions.has(ext(file.name))) throw new Error('This file type is not supported.');
+  if (file.size > MAX_FILE_SIZE) throw new Error('File size exceeds the 5 MB limit.');
+  const dataUrl = await fileToDataUrl(file);
+  const note = noteMetadata(file, dataUrl, metadata);
+  if (localMode) {
+    saveNotes([note, ...readNotes()]);
+    await saveLargeFileChunks(note.id, dataUrl);
+    return note;
+  }
+  try {
+    const noteRef = doc(collection(db, 'notes'));
+    note.id = noteRef.id;
+    note.firestoreDocId = noteRef.id;
+    const batch = writeBatch(db);
+    batch.set(noteRef, { ...note, createdAt: serverTimestamp() });
+    await batch.commit();
+    await saveLargeFileChunks(noteRef.id, dataUrl);
+    return note;
+  } catch (error) {
+    if (!isLocalFallbackError(error)) throw error;
+    enableLocalMode(error);
+    return uploadNote(file, metadata);
+  }
+}
 const filterNotes = (notes, filters) => { const term = sanitizeText(filters.search, 120).toLowerCase(); return notes.filter(note => (!filters.subject || note.subject === filters.subject) && (!filters.extension || note.extension === filters.extension) && (!filters.mine || note.uploaderId === activeUser()?.uid) && (!term || [note.title, note.description, note.subject, note.uploaderName, ...(note.tags || [])].join(' ').toLowerCase().includes(term))); };
 export async function listCommunityNotes(filters = {}) { currentFilters = filters; if (localMode) return filterNotes(readNotes(), filters); return filterNotes(currentNotes, filters); }
 export async function renderMyUploadedNotes(container = document.querySelector('#my-uploaded-notes-grid')) { if (!container) return []; const notes = filterNotes(localMode ? readNotes() : currentNotes, { mine: true }); container.replaceChildren(); if (!notes.length) { const empty = document.createElement('p'); empty.className = 'empty-state empty-state-card'; empty.textContent = 'You have not uploaded any study notes yet.'; container.append(empty); return notes; } notes.forEach(note => container.append(createCard(note))); return notes; }
@@ -45,7 +112,28 @@ async function findNote(noteIdOrNote) { if (typeof noteIdOrNote !== 'string') re
 const base64Bytes = value => Uint8Array.from(atob(String(value).split(',').pop().replace(/\s/g, '')), character => character.charCodeAt(0));
 export async function downloadNoteFile(noteIdOrNote) { if (!activeUser()) throw new Error('Sign in before downloading notes.'); const note = await findNote(noteIdOrNote); const dataUrl = await getNoteDataUrl(note); const blob = new Blob([base64Bytes(dataUrl)], { type: note.mimeType || note.contentType || 'application/pdf' }); const blobUrl = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = note.fileName || note.title || `${note.id || 'note'}.${note.fileExt || note.extension || 'pdf'}`; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 10000); }
 export async function downloadNote(note, callback) { try { await downloadNoteFile(note); callback?.(null); } catch (error) { callback?.(error); throw error; } }
-export async function deleteNote(note) { const user = activeUser(); if (!user || user.uid !== note.uploaderId) throw new Error('Only the note author can delete this note.'); if (localMode) { saveNotes(readNotes().filter(item => item.id !== note.id)); await deleteLocalChunks(note.id); renderCommunityFeed(); return; } let docId = note.firestoreDocId || note.id; let noteSnapshot = await getDoc(doc(db, 'notes', docId)); if (!noteSnapshot.exists() && note.id) { docId = await resolveFirestoreDocId(note.id); if (!docId) throw new Error('The note could not be found.'); noteSnapshot = await getDoc(doc(db, 'notes', docId)); } const chunks = await getDocs(collection(db, 'notes', docId, 'chunks')); await Promise.all(chunks.docs.map(item => deleteDoc(item.ref))); await deleteDoc(doc(db, 'notes', docId)); }
+export async function deleteNote(note) {
+  const user = activeUser();
+  if (!user || user.uid !== note.uploaderId) throw new Error('Only the note author can delete this note.');
+  if (localMode) {
+    saveNotes(readNotes().filter(item => item.id !== note.id));
+    await deleteLocalChunks(note.id);
+    renderCommunityFeed();
+    return;
+  }
+  let docId = note.firestoreDocId || note.id;
+  let noteSnapshot = await getDoc(doc(db, 'notes', docId));
+  if (!noteSnapshot.exists() && note.id) {
+    docId = await resolveFirestoreDocId(note.id);
+    if (!docId) throw new Error('The note could not be found.');
+    noteSnapshot = await getDoc(doc(db, 'notes', docId));
+  }
+  const chunks = await getDocs(collection(db, 'notes', docId, 'chunks'));
+  const batch = writeBatch(db);
+  chunks.docs.forEach(item => batch.delete(item.ref));
+  batch.delete(doc(db, 'notes', docId));
+  await batch.commit();
+}
 export function bindUploadWidget(widget = document.querySelector('[data-upload-widget]')) {
   if (!widget || widget.dataset.firebaseUploadBound) return;
   widget.dataset.firebaseUploadBound = 'true';
