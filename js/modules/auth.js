@@ -1,5 +1,5 @@
-﻿import { auth, db, firebaseReady, isLocalFallbackError, resolvePagePath } from '../config/firebase-config.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { auth, db, firebaseReady, isLocalFallbackError, resolvePagePath } from '../config/firebase-config.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
@@ -82,6 +82,28 @@ export function onUserChange(callback) {
 }
 export function requireAuth(redirect = 'login.html') { return new Promise(resolve => onUserChange(user => { if (!user && redirect) location.href = resolvePagePath(redirect); resolve(user || null); })); }
 export function requireGuest(redirect = 'index.html') { return new Promise(resolve => onUserChange(user => { if (user && redirect) location.href = resolvePagePath(redirect); else resolve(!user); })); }
+export function initAuthGuard() {
+  const protectedPage = ['dashboard.html', 'notes.html', 'chats.html'].some(page => window.location.pathname.endsWith(`/${page}`) || window.location.pathname.endsWith(page));
+  if (!protectedPage) return () => { };
+  return onUserChange(user => {
+    if (!user) window.location.replace(resolvePagePath('login.html'));
+  });
+}
+export async function requestPasswordReset(email) {
+  const normalizedEmail = String(email || '').trim();
+  if (!normalizedEmail) throw new Error('Enter your email address first.');
+  if (localMode) {
+    message('Password reset email sent! Check your inbox.', false);
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, normalizedEmail);
+    message('Password reset email sent! Check your inbox.', false);
+  } catch (error) {
+    if (isLocalFallbackError(error)) { enableLocalMode(error); message('Password reset email sent! Check your inbox.', false); return; }
+    throw error;
+  }
+}
 export function bindAuthForms() {
   const form = document.querySelector('.auth-card form'); if (!form) return;
   form.addEventListener('submit', async event => {
@@ -92,6 +114,23 @@ export function bindAuthForms() {
     catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message); }
   });
   document.querySelector('[data-google-signin]')?.addEventListener('click', async () => { try { message(localMode ? 'Continuing locally…' : 'Opening Google sign-in…', false); await signInWithGoogle(); location.href = resolvePagePath('dashboard.html'); } catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message || 'Google sign-in failed.'); } });
+  document.querySelector('[data-forgot-password]')?.addEventListener('click', event => {
+    event.preventDefault();
+    const modal = document.querySelector('#password-reset-modal');
+    const emailInput = document.querySelector('#password-reset-email');
+    if (!modal) return;
+    emailInput.value = document.querySelector('#email')?.value.trim() || '';
+    modal.hidden = false;
+    emailInput.focus();
+  });
+  document.querySelector('[data-close-password-reset]')?.addEventListener('click', () => { document.querySelector('#password-reset-modal').hidden = true; });
+  document.querySelector('#password-reset-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = form.querySelector('#password-reset-email').value;
+    try { await requestPasswordReset(email); form.reset(); document.querySelector('#password-reset-modal').hidden = true; }
+    catch (error) { message(error.code ? error.code.replace('auth/', '').replaceAll('-', ' ') : error.message || 'Unable to send password reset email.'); }
+  });
 }
 export function bindNavbar() {
   onUserChange(user => document.querySelectorAll('.buttons').forEach(nav => {
@@ -108,5 +147,6 @@ export function bindNavbar() {
     nav.append(name, logout);
   }));
 }
-api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, isLocalMode: () => localMode };
+api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, isLocalMode: () => localMode };
+initAuthGuard();
 bindAuthForms(); bindNavbar();

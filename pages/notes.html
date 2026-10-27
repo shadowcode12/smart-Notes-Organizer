@@ -1,4 +1,96 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notes & Upload Vault | SmartNotes</title><link rel="stylesheet" href="../css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head><body class="app-page">
-<aside class="app-sidebar"><a class="brand" href="../index.html"><span class="brand-mark">▦</span><span>SmartNotes<small style="display:block;color:#64748b;font-weight:400">Campus Study Hub</small></span></a><nav><a href="dashboard.html">▦　Dashboard</a><a class="current" href="notes.html">▤　Notes & Upload</a><a href="chats.html">▣　Student Chats <b>3</b></a><a href="templates.html">⊞　Templates</a></nav><div class="promo">✨ <b>AI Summaries</b> <small>Soon</small><br>Turn lecture decks into flashcards & summaries automatically.</div><div class="storage">Storage <span style="float:right">4.2 / 15 GB</span><i></i>Free Tier Account</div></aside>
-<div class="app-content"><header class="app-topbar"><input class="global-search" data-global-search placeholder="⌕  Search notes, subjects, or authors...　⌘K"><span>◔　?　　<b>Alex Rivers</b>　↪</span></header><main><section class="workspace-page"><div class="workspace-banner"><span class="eyebrow">WORKSPACE MODE　•　Campus Study Node</span><h1>Notes & Upload Vault</h1><p>Upload and publish your lecture notes, formula sheets, and study guides for verified campus peers.</p></div><section class="panel"><h2>⬆ Publish New Study Guide <span class="eyebrow" style="float:right">● Auto OCR Engine Ready</span></h2><div class="workspace-columns"><div class="upload-panel" data-upload-widget><input class="file-input" id="study-file-input" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" multiple hidden><div class="upload-dropzone drop-zone"><div class="upload-icon">♧</div><b>Drop study files here or browse</b><br><small>Supports PDF, DOCX, PPTX, or PNG</small></div><div class="upload-fields"><input class="note-title" placeholder="Note title (required)"><input class="note-subject" placeholder="Subject / course code"><textarea class="note-description" rows="3" placeholder="Description & key topics"></textarea><input class="note-tags" placeholder="Topics & search tags"></div><ul class="file-list"></ul><div class="upload-status" aria-live="polite"></div><button class="button primary publish-button" data-publish-note>Publish Note →</button></div><div class="upload-copy"><p>🔒 100% Free & Open Campus Access (No paywall)</p><p class="muted">Share clear, useful study resources with your classmates. Files are stored securely and remain downloadable for free.</p></div></div></section><section class="panel"><h2>My Uploaded Notes <span class="eyebrow">0 files</span></h2><div id="my-uploaded-notes-grid" class="community-feed"><p class="empty-state empty-state-card">You have not uploaded any study notes yet.</p></div></section><section class="panel" id="community"><div class="section-heading"><div><span class="eyebrow">COMMUNITY STUDY NOTES</span><h2>Peer-reviewed notes from campus</h2></div></div><div class="feed-toolbar"><input id="community-search" type="search" placeholder="Search titles, descriptions, or authors"><select id="community-subject"><option value="">All subjects</option></select><select id="community-extension"><option value="">All file types</option><option value="pdf">PDF</option><option value="pptx">PPTX</option><option value="png">PNG</option></select></div><div id="community-feed" class="community-feed"><p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to share a resource!</p></div></section></section></main></div>
-<script type="module" src="../js/config/firebase-config.js"></script><script type="module" src="../js/modules/auth.js"></script><script type="module" src="../js/modules/notes.js"></script><script type="module" src="../js/modules/chat.js"></script><script type="module" src="../js/script.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Notes & Upload Vault | SmartNotes</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="app-page">
+    <aside class="app-sidebar"><a class="brand" href="../index.html"><span
+                class="brand-mark">▦</span><span>SmartNotes<small
+                    style="display:block;color:#64748b;font-weight:400">Campus Study Hub</small></span></a>
+        <nav><a href="dashboard.html">▦　Dashboard</a><a class="current" href="notes.html">▤　Notes & Upload</a><a
+                href="chats.html">▣　Student Chats <b>3</b></a><a href="templates.html">⊞　Templates</a></nav>
+        <div class="promo">✨ <b>AI Summaries</b> <small>Soon</small><br>Turn lecture decks into flashcards & summaries
+            automatically.</div>
+        <div class="storage">Storage <span style="float:right">4.2 / 15 GB</span><i></i>Free Tier Account</div>
+    </aside>
+    <div class="app-content">
+        <header class="app-topbar"><input class="global-search" data-global-search
+                placeholder="⌕  Search notes, subjects, or authors...　⌘K"><span>◔　?　　<b>Alex Rivers</b>　↪</span>
+        </header>
+        <main>
+            <section class="workspace-page">
+                <div class="workspace-banner"><span class="eyebrow">WORKSPACE MODE　•　Campus Study Node</span>
+                    <h1>Notes & Upload Vault</h1>
+                    <p>Upload and publish your lecture notes, formula sheets, and study guides for verified campus
+                        peers.</p>
+                </div>
+                <section class="panel">
+                    <h2>⬆ Publish New Study Guide <span class="eyebrow" style="float:right">● Auto OCR Engine
+                            Ready</span></h2>
+                    <div class="workspace-columns">
+                        <div class="upload-panel" data-upload-widget><input class="file-input" id="study-file-input"
+                                type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" multiple
+                                hidden>
+                            <div class="upload-dropzone drop-zone">
+                                <div class="upload-icon">♧</div><b>Drop study files here or
+                                    browse</b><br><small>Supports PDF, DOCX, PPTX, or PNG</small>
+                            </div>
+                            <div class="upload-fields"><input class="note-title"
+                                    placeholder="Note title (required)"><input class="note-subject"
+                                    placeholder="Subject / course code"><textarea class="note-description" rows="3"
+                                    placeholder="Description & key topics"></textarea><input class="note-tags"
+                                    placeholder="Topics & search tags"></div>
+                            <ul class="file-list"></ul>
+                            <div class="upload-status" aria-live="polite"></div><button
+                                class="button primary publish-button" data-publish-note>Publish Note →</button>
+                        </div>
+                        <div class="upload-copy">
+                            <p>🔒 100% Free & Open Campus Access (No paywall)</p>
+                            <p class="muted">Share clear, useful study resources with your classmates. Files are stored
+                                securely and remain downloadable for free.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel">
+                    <h2>My Uploaded Notes <span class="eyebrow">0 files</span></h2>
+                    <div id="my-uploaded-notes-grid" class="community-feed">
+                        <p class="empty-state empty-state-card">You have not uploaded any study notes yet.</p>
+                    </div>
+                </section>
+                <section class="panel" id="community">
+                    <div class="section-heading">
+                        <div><span class="eyebrow">COMMUNITY STUDY NOTES</span>
+                            <h2>Peer-reviewed notes from campus</h2>
+                        </div>
+                    </div>
+                    <div class="feed-toolbar"><input id="community-search" type="search"
+                            placeholder="Search titles, descriptions, or authors"><select id="community-subject">
+                            <option value="">All subjects</option>
+                        </select><select id="community-extension">
+                            <option value="">All file types</option>
+                            <option value="pdf">PDF</option>
+                            <option value="pptx">PPTX</option>
+                            <option value="png">PNG</option>
+                        </select></div>
+                    <div id="community-feed" class="community-feed">
+                        <p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to
+                            share a resource!</p>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+    <footer class="app-footer"><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="guidelines.html">Guidelines</a></footer><script type="module" src="../js/config/firebase-config.js"></script>
+    <script type="module" src="../js/modules/auth.js"></script>
+    <script type="module" src="../js/modules/notes.js"></script>
+    <script type="module" src="../js/modules/chat.js"></script>
+    <script type="module" src="../js/script.js"></script>
+</body>
+
+</html>

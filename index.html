@@ -1,28 +1,128 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartNotes | Learn together with peers</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
 </head>
+
 <body class="landing">
-  <header class="site-header"><a class="brand" href="index.html"><span class="brand-mark">▦</span><span>SmartNotes</span></a><nav class="nav-links"><a href="#features">Features</a><a href="pages/templates.html">Templates</a><a href="#community-notes">Community</a><a href="pages/blog.html">Blog</a></nav><div class="header-actions"><a href="pages/login.html">Log in</a><a class="button primary" href="pages/signup.html">Get Started Free <span>→</span></a></div></header>
+  <header class="site-header"><a class="brand" href="index.html"><span
+        class="brand-mark">▦</span><span>SmartNotes</span></a>
+    <nav class="nav-links"><a href="#features">Features</a><a href="pages/templates.html">Templates</a><a
+        href="#community-notes">Community</a><a href="pages/blog.html">Blog</a></nav>
+    <div class="header-actions"><a href="pages/login.html">Log in</a><a class="button primary"
+        href="pages/signup.html">Get Started Free <span>→</span></a></div>
+  </header>
   <main>
     <section class="hero-section">
-      <div class="hero-copy"><span class="eyebrow">● 100% Free <i>•</i> AI Summaries Coming Soon <kbd>⌘K</kbd></span><h1>Organize your study notes. Learn together with <em>peers.</em></h1><p>The open-access knowledge exchange built exclusively for students. Access verified course notes, lecture decks, and collaborative study groups — completely free forever.</p><div class="hero-actions"><a class="button primary" href="pages/signup.html">Get Started Free <span>→</span></a><a class="button secondary" href="#community-notes">Explore Shared Notes</a></div><div class="social-proof"><span class="avatars"><b>SC</b><b>MV</b><b>ER</b><b>DK</b><strong>+4k</strong></span><span>Joined by 24,000+ university students from MIT, Stanford, Berkeley & more</span></div></div>
-      <div class="browser-mockup"><div class="browser-bar"><span class="traffic"><i></i><i></i><i></i></span><code>smartnotes.app/workspace/cs106b-dijkstra</code><span>↗</span></div><div class="browser-body"><aside><small>MY SUBJECTS　⊙</small><b>▣　CS106B Data Structures</b><span>□　Organic Chemistry II</span><span>□　Microeconomics 101</span><span>□　Linear Algebra MATH 51</span><div class="cohort"><small>ACTIVE COHORT</small><p>● Alex is working<br>　 on Dijkstra's proof</p></div></aside><article><div class="mock-tags"><span>PDF</span><i>Verified Study Guide</i></div><h3>CS106B - Graph Algorithms & Dijkstra Cheatsheet</h3><p>🔒 Professor-Verified Midterm Emphasis:<br>Remember Dijkstra assumes non-negative edge weights.</p><pre>// Dijkstra with Min-Priority Heap
+      <div class="hero-copy"><span class="eyebrow">● 100% Free <i>•</i> AI Summaries Coming Soon <kbd>⌘K</kbd></span>
+        <h1>Organize your study notes. Learn together with <em>peers.</em></h1>
+        <p>The open-access knowledge exchange built exclusively for students. Access verified course notes, lecture
+          decks, and collaborative study groups — completely free forever.</p>
+        <div class="hero-actions"><a class="button primary" href="pages/signup.html">Get Started Free
+            <span>→</span></a><a class="button secondary" href="#community-notes">Explore Shared Notes</a></div>
+        <div class="social-proof"><span
+            class="avatars"><b>SC</b><b>MV</b><b>ER</b><b>DK</b><strong>Live</strong></span>            <span><strong id="student-count">Student community</strong> sharing notes across university courses</span></div>
+      </div>
+      <div class="browser-mockup">
+        <div class="browser-bar"><span
+            class="traffic"><i></i><i></i><i></i></span><code>smartnotes.app/workspace/cs106b-dijkstra</code><span>↗</span>
+        </div>
+        <div class="browser-body">
+          <aside><small>MY SUBJECTS　⊙</small><b>▣　CS106B Data Structures</b><span>□　Organic Chemistry
+              II</span><span>□　Microeconomics 101</span><span>□　Linear Algebra MATH 51</span>
+            <div class="cohort"><small>ACTIVE COHORT</small>
+              <p>● Alex is working<br>　 on Dijkstra's proof</p>
+            </div>
+          </aside>
+          <article>
+            <div class="mock-tags"><span>PDF</span><i>Verified Study Guide</i></div>
+            <h3>CS106B - Graph Algorithms & Dijkstra Cheatsheet</h3>
+            <p>🔒 Professor-Verified Midterm Emphasis:<br>Remember Dijkstra assumes non-negative edge weights.</p>
+            <pre>// Dijkstra with Min-Priority Heap
 priority_queue<pair<int,int>, vector&lt;...&gt;, greater&lt;...&gt;&gt; pq;
 dist[src] = 0;
-while (!pq.empty()) { ... }</pre><div class="comment">🧑‍🎓 Maya K. <span>"This solved question 4 on Practice Midterm 2!"</span></div></article></div></div>
+while (!pq.empty()) { ... }</pre>
+            <div class="comment">🧑‍🎓 Maya K. <span>"This solved question 4 on Practice Midterm 2!"</span></div>
+          </article>
+        </div>
+      </div>
     </section>
-    <section id="features" class="features-section"><div class="section-intro"><span class="eyebrow">DESIGNED FOR HIGH PERFORMANCE</span><h2>Everything you need to master your syllabus</h2><p>Clean, distraction-free study utilities engineered around collaborative student workflows.</p></div><div class="feature-grid"><article class="feature-card"><span class="feature-icon">♧</span><h3>Cloud Note Storage</h3><p>Never lose a formula sheet or lecture deck again. Unlimited, structured multi-subject storage accessible from any device.</p><div class="mini-ui"><small>STORAGE VAULT · 100% FREE SYNC</small><div>☑ Lectures / Fall 2024 <b>42 decks</b></div><div>□ Midterm Prep & Cheatsheets <b>18 files</b></div><div>□ Lab Reports & Raw Datasets <b>9 documents</b></div></div></article><article class="feature-card"><span class="feature-icon blue">⌕</span><h3>Instant Search & Filter</h3><p>Find exact lecture slides, theorem proofs, and past exam breakdowns in milliseconds across your entire campus archive.</p><div class="mini-ui search-ui">⌕ Dijkstra runtime complexity <kbd>ESC</kbd><div>Lecture 14: Shortest Paths (CS 106B) <b>Slide 24</b></div><div>Final Review Guide · Stanford <b>Prof. Cain</b></div></div></article><article class="feature-card"><span class="feature-icon blue">▣</span><h3>1-on-1 Student Chat</h3><p>Ask questions directly or start private study groups with classmates enrolled in the same course.</p><div class="chat-mini"><span>Hey! Did you understand the homomorphic type?</span><b>Yes, check out the annotated diagram in Section 4!</b></div></article><article class="feature-card"><span class="feature-icon">✣</span><label class="coming">● COMING SOON</label><h3>AI Study Assistant</h3><p>Turn 40-page lecture decks into concise, 3-minute executive summaries and active-recall flashcards.</p><div class="ai-mini"><span>3-Bullet Summary</span><span>Auto Flashcards</span><span>Formula Sheets</span></div></article></div></section>
-    <section id="community-notes" class="community-section"><div class="section-heading"><div><span class="eyebrow">COLLABORATIVE KNOWLEDGE BASE</span><h2>Trending Notes From Campus Classmates</h2><p>Peer-reviewed, curated, and verified student notes across top universities.</p></div><a href="pages/notes.html">Browse all notes →</a></div><div id="community-feed" class="community-feed"><p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to share a resource!</p></div></section>
-    <section class="dark-cta"><span class="feature-icon">♧</span><h2>Ready to elevate your GPA without spending a dime?</h2><p>Join thousands of ambitious students sharing, learning, and acing exams together on SmartNotes.</p><a class="button primary" href="pages/signup.html">Create Your Free Account →</a><small>· No credit card required. Free forever.</small></section>
+    <section id="features" class="features-section">
+      <div class="section-intro"><span class="eyebrow">DESIGNED FOR HIGH PERFORMANCE</span>
+        <h2>Everything you need to master your syllabus</h2>
+        <p>Clean, distraction-free study utilities engineered around collaborative student workflows.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon">♧</span>
+          <h3>Cloud Note Storage</h3>
+          <p>Never lose a formula sheet or lecture deck again. Unlimited, structured multi-subject storage accessible
+            from any device.</p>
+          <div class="mini-ui"><small>STORAGE VAULT · 100% FREE SYNC</small>
+            <div>☑ Lectures / Fall 2024 <b>42 decks</b></div>
+            <div>□ Midterm Prep & Cheatsheets <b>18 files</b></div>
+            <div>□ Lab Reports & Raw Datasets <b>9 documents</b></div>
+          </div>
+        </article>
+        <article class="feature-card"><span class="feature-icon blue">⌕</span>
+          <h3>Instant Search & Filter</h3>
+          <p>Find exact lecture slides, theorem proofs, and past exam breakdowns in milliseconds across your entire
+            campus archive.</p>
+          <div class="mini-ui search-ui">⌕ Dijkstra runtime complexity <kbd>ESC</kbd>
+            <div>Lecture 14: Shortest Paths (CS 106B) <b>Slide 24</b></div>
+            <div>Final Review Guide · Stanford <b>Prof. Cain</b></div>
+          </div>
+        </article>
+        <article class="feature-card"><span class="feature-icon blue">▣</span>
+          <h3>1-on-1 Student Chat</h3>
+          <p>Ask questions directly or start private study groups with classmates enrolled in the same course.</p>
+          <div class="chat-mini"><span>Hey! Did you understand the homomorphic type?</span><b>Yes, check out the
+              annotated diagram in Section 4!</b></div>
+        </article>
+        <article class="feature-card"><span class="feature-icon">✣</span><label class="coming">● COMING SOON</label>
+          <h3>AI Study Assistant</h3>
+          <p>Turn 40-page lecture decks into concise, 3-minute executive summaries and active-recall flashcards.</p>
+          <div class="ai-mini"><span>3-Bullet Summary</span><span>Auto Flashcards</span><span>Formula Sheets</span>
+          </div>
+        </article>
+      </div>
+    </section>
+    <section id="community-notes" class="community-section">
+      <div class="section-heading">
+        <div><span class="eyebrow">COLLABORATIVE KNOWLEDGE BASE</span>
+          <h2>Trending Notes From Campus Classmates</h2>
+          <p>Peer-reviewed, curated, and verified student notes across top universities.</p>
+        </div><a href="pages/notes.html">Browse all notes →</a>
+      </div>
+      <div id="community-feed" class="community-feed">
+        <p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to share a resource!
+        </p>
+      </div>
+    </section>
+    <section class="dark-cta"><span class="feature-icon">♧</span>
+      <h2>Ready to elevate your GPA without spending a dime?</h2>
+      <p>Join thousands of ambitious students sharing, learning, and acing exams together on SmartNotes.</p><a
+        class="button primary" href="pages/signup.html">Create Your Free Account →</a><small>· No credit card required.
+        Free forever.</small>
+    </section>
   </main>
-  <footer class="site-footer"><a class="brand" href="index.html"><span class="brand-mark">▦</span><span>SmartNotes</span></a><span>100% Free peer-to-peer student sharing.</span><nav><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Guidelines</a><a href="#">GitHub</a><a href="#">Twitter</a><a href="#">Discord</a></nav><small>● All systems operational</small></footer>
-  <script type="module" src="js/config/firebase-config.js"></script><script type="module" src="js/modules/auth.js"></script><script type="module" src="js/modules/notes.js"></script><script type="module" src="js/modules/chat.js"></script><script type="module" src="js/script.js"></script>
+  <footer class="site-footer"><a class="brand" href="index.html"><span
+        class="brand-mark">▦</span><span>SmartNotes</span></a><span>100% Free peer-to-peer student sharing.</span>
+    <nav><a href="pages/terms.html">Terms</a><a href="pages/privacy.html">Privacy</a><a href="pages/guidelines.html">Guidelines</a><a
+        href="#">GitHub</a><a href="#">Twitter</a><a href="#">Discord</a></nav><small>● SmartNotes services available</small>
+  </footer>
+  <script type="module" src="js/config/firebase-config.js"></script>
+  <script type="module" src="js/modules/auth.js"></script>
+  <script type="module" src="js/modules/notes.js"></script>
+  <script type="module" src="js/modules/chat.js"></script>
+  <script type="module" src="js/script.js"></script>
 </body>
+
 </html>

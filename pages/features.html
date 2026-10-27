@@ -1,38 +1,148 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Features | SmartNotes</title>
-<link rel="stylesheet" href="../css/style.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body class="marketing-page">
-<header><nav class="navbar"><a class="logo" href="../index.html">📝 SmartNotes</a><ul class="nav-links"><li><a class="current" href="features.html">Features</a></li><li><a href="templates.html">Templates</a></li><li><a href="blog.html">Blog</a></li></ul><div class="buttons"><button class="button login" type="button" data-global-search aria-label="Search study notes">🔍</button><a class="button login" href="login.html">Login</a><a class="button signup" href="signup.html">Get Started</a></div></nav></header>
-<main>
-<section class="page-hero"><span class="eyebrow">A calmer way to work</span><h1>Everything you need to<br><span>think clearly.</span></h1><p>SmartNotes brings your notes, tasks, documents, and ideas together in one beautifully simple workspace.</p></section>
-<section class="feature-grid feature-page-grid">
-<div class="card feature-card"><div class="feature-icon">📂</div><h3>Smart organization</h3><p>AI automatically sorts your notes into the right notebooks, so your thoughts are always easy to find.</p></div>
-<div class="card feature-card"><div class="feature-icon">🔍</div><h3>Instant search</h3><p>Search across every note, attachment, and handwritten page in milliseconds.</p></div>
-<div class="card feature-card"><div class="feature-icon">✨</div><h3>AI summaries</h3><p>Turn long meeting notes and research into clear, useful takeaways in one click.</p></div>
-<div class="card feature-card"><div class="feature-icon">☁️</div><h3>Cloud sync</h3><p>Pick up exactly where you left off on your phone, tablet, or desktop.</p></div>
-<div class="card feature-card"><div class="feature-icon">🤝</div><h3>Team collaboration</h3><p>Share notebooks, leave comments, and keep everyone aligned without the busywork.</p></div>
-<div class="card feature-card"><div class="feature-icon">🔒</div><h3>Private by design</h3><p>Your notes are protected with encrypted storage and thoughtful privacy controls.</p></div>
-</section>
-<section class="study-vault feature-vault">
-<div class="vault-copy"><span class="eyebrow">Study without limits</span><h2>Bring every resource<br><span>into one workspace.</span></h2><p>Keep PDFs, Word documents, PowerPoint slides, and images beside your notes. Upload as many study materials as you need, completely free.</p><div class="file-types"><span>PDF</span><span>DOC</span><span>PPT</span><span>JPG</span><span>PNG</span></div></div>
-<div class="upload-panel" data-upload-widget><input class="file-input" id="study-file-input" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" multiple hidden><div class="upload-fields"><input class="note-title" type="text" placeholder="Document title" aria-label="Document title"><input class="note-subject" type="text" placeholder="Subject or category" aria-label="Subject or category"><input class="note-tags" type="text" placeholder="Tags, separated by commas" aria-label="Tags"><textarea class="note-description" rows="2" placeholder="Short description" aria-label="Description"></textarea></div><div class="upload-dropzone drop-zone" tabindex="0" role="button"><div class="upload-icon">↑</div><h3>Drop study files here</h3><p>or <span class="browse-link">browse from your device</span></p><small>PDF, DOC, DOCX, PPT, PPTX, JPG, PNG, GIF, WEBP · Free for everyone</small></div><ul class="file-list"></ul><div class="upload-status" aria-live="polite"></div><button class="button primary publish-button" type="button" data-publish-note>Publish Upload Note</button></div>
-</section>
-<section class="community-section" id="community"><div class="section-heading"><div><span class="eyebrow">Learn together</span><h2>Community study notes</h2><p>Discover resources shared by students and support each other’s learning.</p></div></div><div class="feed-toolbar"><input id="community-search" type="search" placeholder="Search titles, descriptions, or authors"><select id="community-subject"><option value="">All subjects</option></select><select id="community-extension"><option value="">All file types</option><option value="pdf">PDF</option><option value="doc">DOC</option><option value="docx">DOCX</option><option value="ppt">PPT</option><option value="pptx">PPTX</option><option value="jpg">JPG</option><option value="png">PNG</option></select></div><div id="community-feed" class="community-feed"><p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to share a resource!</p></div></section>
-<div id="chat-drawer" class="chat-drawer" aria-hidden="true"><div class="chat-header"><div><strong>Study chat</strong><span id="chat-partner">Select a note author</span></div><button type="button" data-close-chat>×</button></div><div id="conversation-list" class="conversation-list"></div><div id="chat-messages" class="chat-messages"><p class="empty-state">Choose a conversation to start chatting.</p></div><form id="chat-form" class="chat-form"><input id="chat-input" type="text" placeholder="Write a message…" autocomplete="off"><button class="button primary" type="submit">Send</button></form></div>
-<section class="cta"><h2>Ready to make space for better ideas?</h2><p>Start organizing your thinking today. No credit card required.</p><a class="button primary" href="signup.html">Start for free</a></section>
-</main>
-<footer><p>© 2026 SmartNotes. All Rights Reserved.</p><div><a href="features.html">Features</a><a href="templates.html">Templates</a><a href="blog.html">Blog</a></div></footer>
 
-<script type="module" src="../js/config/firebase-config.js"></script>
-<script type="module" src="../js/modules/auth.js"></script>
-<script type="module" src="../js/modules/notes.js"></script>
-<script type="module" src="../js/modules/chat.js"></script>
-<script type="module" src="../js/script.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features | SmartNotes</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="marketing-page">
+    <header>
+        <nav class="navbar"><a class="logo" href="../index.html">📝 SmartNotes</a>
+            <ul class="nav-links">
+                <li><a class="current" href="features.html">Features</a></li>
+                <li><a href="templates.html">Templates</a></li>
+                <li><a href="blog.html">Blog</a></li>
+            </ul>
+            <div class="buttons"><button class="button login" type="button" data-global-search
+                    aria-label="Search study notes">🔍</button><a class="button login" href="login.html">Login</a><a
+                    class="button signup" href="signup.html">Get Started</a></div>
+        </nav>
+    </header>
+    <main>
+        <section class="page-hero"><span class="eyebrow">Built for university study</span>
+                    <h1>Everything you need to<br><span>master your syllabus.</span></h1>
+                    <p>SmartNotes brings lecture decks, course notes, study groups, and peer-reviewed resources together in one focused student workspace.
+            </p>
+        </section>
+        <section class="feature-grid feature-page-grid">
+            <div class="card feature-card">
+                <div class="feature-icon">📂</div>
+                <h3>Course organization</h3>
+                                <p>Keep lecture notes, syllabus topics, and peer resources organized by university course so every concept is easy to find.
+                </p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Instant search</h3>
+                <p>Search across every note, attachment, and handwritten page in milliseconds.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">✨</div>
+                <h3>AI summaries</h3>
+                <p>Turn long lecture decks and research readings into clear, useful takeaways in one click.
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">☁️</div>
+                <h3>Cloud sync</h3>
+                <p>Pick up exactly where you left off on your phone, tablet, or desktop.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🤝</div>
+                <h3>Peer study groups</h3>
+                                <p>Share course notes, ask questions, and keep classmates aligned during exam preparation.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Student-first privacy</h3>
+                                <p>Your study notes and conversations are protected with secure storage and thoughtful privacy controls.</p>
+            </div>
+        </section>
+        <section class="study-vault feature-vault">
+            <div class="vault-copy"><span class="eyebrow">Study without limits</span>
+                <h2>Bring every resource<br><span>into one workspace.</span></h2>
+                <p>Keep PDFs, Word documents, PowerPoint slides, and images beside your notes. Upload as many study
+                    materials as you need, completely free.</p>
+                <div class="file-types"><span>PDF</span><span>DOC</span><span>PPT</span><span>JPG</span><span>PNG</span>
+                </div>
+            </div>
+            <div class="upload-panel" data-upload-widget><input class="file-input" id="study-file-input" type="file"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" multiple hidden>
+                <div class="upload-fields"><input class="note-title" type="text" placeholder="Document title"
+                        aria-label="Document title"><input class="note-subject" type="text"
+                        placeholder="Subject or category" aria-label="Subject or category"><input class="note-tags"
+                        type="text" placeholder="Tags, separated by commas" aria-label="Tags"><textarea
+                        class="note-description" rows="2" placeholder="Short description"
+                        aria-label="Description"></textarea></div>
+                <div class="upload-dropzone drop-zone" tabindex="0" role="button">
+                    <div class="upload-icon">↑</div>
+                    <h3>Drop study files here</h3>
+                    <p>or <span class="browse-link">browse from your device</span></p><small>PDF, DOC, DOCX, PPT, PPTX,
+                        JPG, PNG, GIF, WEBP · Free for everyone</small>
+                </div>
+                <ul class="file-list"></ul>
+                <div class="upload-status" aria-live="polite"></div><button class="button primary publish-button"
+                    type="button" data-publish-note>Publish Upload Note</button>
+            </div>
+        </section>
+        <section class="community-section" id="community">
+            <div class="section-heading">
+                <div><span class="eyebrow">Learn together</span>
+                    <h2>Community study notes</h2>
+                    <p>Discover resources shared by students and support each other’s learning.</p>
+                </div>
+            </div>
+            <div class="feed-toolbar"><input id="community-search" type="search"
+                    placeholder="Search titles, descriptions, or authors"><select id="community-subject">
+                    <option value="">All subjects</option>
+                </select><select id="community-extension">
+                    <option value="">All file types</option>
+                    <option value="pdf">PDF</option>
+                    <option value="doc">DOC</option>
+                    <option value="docx">DOCX</option>
+                    <option value="ppt">PPT</option>
+                    <option value="pptx">PPTX</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png">PNG</option>
+                </select></div>
+            <div id="community-feed" class="community-feed">
+                <p class="empty-state empty-state-card">No study notes uploaded yet. Be the first student to share a
+                    resource!</p>
+            </div>
+        </section>
+        <div id="chat-drawer" class="chat-drawer" aria-hidden="true">
+            <div class="chat-header">
+                <div><strong>Study chat</strong><span id="chat-partner">Select a note author</span></div><button
+                    type="button" data-close-chat>×</button>
+            </div>
+            <div id="conversation-list" class="conversation-list"></div>
+            <div id="chat-messages" class="chat-messages">
+                <p class="empty-state">Choose a conversation to start chatting.</p>
+            </div>
+            <form id="chat-form" class="chat-form"><input id="chat-input" type="text" placeholder="Write a message…"
+                    autocomplete="off"><button class="button primary" type="submit">Send</button></form>
+        </div>
+        <section class="cta">
+            <h2>Ready to make space for better study sessions?</h2>
+                        <p>Start organizing your syllabus today. No credit card required.</p><a class="button primary"
+                href="signup.html">Start for free</a>
+        </section>
+    </main>
+    <footer>
+        <p>© 2026 SmartNotes. All Rights Reserved.</p>
+        <div><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="guidelines.html">Guidelines</a><a href="features.html">Features</a><a href="templates.html">Templates</a><a href="blog.html">Blog</a>
+        </div>
+    </footer>
+
+    <script type="module" src="../js/config/firebase-config.js"></script>
+    <script type="module" src="../js/modules/auth.js"></script>
+    <script type="module" src="../js/modules/notes.js"></script>
+    <script type="module" src="../js/modules/chat.js"></script>
+    <script type="module" src="../js/script.js"></script>
 </body>
+
 </html>

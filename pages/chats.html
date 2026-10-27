@@ -1,1 +1,59 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Chats | SmartNotes</title><link rel="stylesheet" href="../css/style.css"></head><body class="app-page"><aside class="app-sidebar"><a class="brand" href="../index.html"><span class="brand-mark">▦</span><span>SmartNotes<small style="display:block;color:#64748b;font-weight:400">Campus Study Hub</small></span></a><nav><a href="dashboard.html">▦　Dashboard</a><a href="notes.html">▤　Notes & Upload</a><a class="current" href="chats.html">▣　Student Chats <b>3</b></a><a href="templates.html">⊞　Templates</a></nav><div class="promo">✨ <b>AI Summaries</b> <small>Soon</small><br>Turn lecture decks into flashcards & summaries automatically.</div><div class="storage">Storage <span style="float:right">4.2 / 15 GB</span><i></i>Free Tier Account</div></aside><div class="app-content"><header class="app-topbar"><input class="global-search" data-global-search placeholder="⌕  Search notes, subjects, or authors...　⌘K"><span>◔　?　　<b>Alex Rivers</b>　↪</span></header><main><section class="workspace-page"><div class="workspace-banner"><span class="eyebrow">STUDENT CHATS　•　● Online</span><h1>Study conversations</h1><p>Message note authors and classmates in real time.</p></div><div class="chat-page"><aside class="chat-page-sidebar"><h2>Student Chats <small class="eyebrow">3</small></h2><input id="conversation-search" placeholder="⌕ Search chats or classmates..."><div class="conversation-list" id="conversation-list"></div><p class="empty-state">👥 Find Study Buddies　Browse</p></aside><section class="chat-page-thread"><div class="chat-header"><b id="chat-partner">Select a classmate</b><small>　Online · Re: Shared Study Note</small></div><div class="chat-messages" id="chat-messages"><p class="empty-state">Choose a conversation to start chatting.</p></div><form class="chat-form" id="chat-form"><input id="chat-input" placeholder="Message classmate or paste study note link..."><button class="button primary">Send →</button></form></section></div></section></main></div><script type="module" src="../js/config/firebase-config.js"></script><script type="module" src="../js/modules/auth.js"></script><script type="module" src="../js/modules/notes.js"></script><script type="module" src="../js/modules/chat.js"></script><script type="module" src="../js/script.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Student Chats | SmartNotes</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body class="app-page">
+    <aside class="app-sidebar"><a class="brand" href="../index.html"><span
+                class="brand-mark">▦</span><span>SmartNotes<small
+                    style="display:block;color:#64748b;font-weight:400">Campus Study Hub</small></span></a>
+        <nav><a href="dashboard.html">▦　Dashboard</a><a href="notes.html">▤　Notes & Upload</a><a class="current"
+                href="chats.html">▣　Student Chats <b>3</b></a><a href="templates.html">⊞　Templates</a></nav>
+        <div class="promo">✨ <b>AI Summaries</b> <small>Soon</small><br>Turn lecture decks into flashcards & summaries
+            automatically.</div>
+        <div class="storage">Storage <span style="float:right">4.2 / 15 GB</span><i></i>Free Tier Account</div>
+    </aside>
+    <div class="app-content">
+        <header class="app-topbar"><input class="global-search" data-global-search
+                placeholder="⌕  Search notes, subjects, or authors...　⌘K"><span>◔　?　　<b>Alex Rivers</b>　↪</span>
+        </header>
+        <main>
+            <section class="workspace-page">
+                <div class="workspace-banner"><span class="eyebrow">STUDENT CHATS　•　● Online</span>
+                    <h1>Study conversations</h1>
+                    <p>Message note authors and classmates in real time.</p>
+                </div>
+                <div class="chat-page">
+                    <aside class="chat-page-sidebar">
+                        <h2>Student Chats <small class="eyebrow">3</small></h2><input id="conversation-search"
+                            placeholder="⌕ Search chats or classmates...">
+                        <div class="conversation-list" id="conversation-list"></div>
+                        <p class="empty-state">👥 Find Study Buddies　Browse</p>
+                    </aside>
+                    <section class="chat-page-thread">
+                        <div class="chat-header"><b id="chat-partner">Select a classmate</b><small>　Online · Re: Shared
+                                Study Note</small></div>
+                        <div class="chat-messages" id="chat-messages">
+                            <p class="empty-state">Choose a conversation to start chatting.</p>
+                        </div>
+                        <form class="chat-form" id="chat-form"><input id="chat-input"
+                                placeholder="Message classmate or paste study note link..."><button
+                                class="button primary">Send →</button></form>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+    <footer class="app-footer"><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="guidelines.html">Guidelines</a></footer><script type="module" src="../js/config/firebase-config.js"></script>
+    <script type="module" src="../js/modules/auth.js"></script>
+    <script type="module" src="../js/modules/notes.js"></script>
+    <script type="module" src="../js/modules/chat.js"></script>
+    <script type="module" src="../js/script.js"></script>
+</body>
+
+</html>

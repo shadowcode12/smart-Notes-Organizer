@@ -84,7 +84,7 @@ While signed in, the navigation bar on every page shows **Dashboard**, **Notes**
 
 Users can open a conversation from a community note and send messages to its author. Firestore conversations update in real time. Local mode stores chat threads in `localStorage`.
 
-### Downloads are free and direct. Signed-in users can download a community note with one click; the existing chunked file reconstruction remains unchanged.
+### Downloads are free and direct. Signed-in users can download a community note with one click; the existing chunked file reconstruction remains unchanged
 
 ## Application pages
 

@@ -79,8 +79,8 @@ function bindGlobalSearch() {
   button.addEventListener('click', () => { const query = prompt('Search study notes'); if (query === null) return; const input = document.querySelector('#community-search'); if (input) { input.value = query; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); document.querySelector('#community')?.scrollIntoView({ behavior: 'smooth' }); } else window.location.href = `${pagePath('notes.html')}?q=${encodeURIComponent(query)}`; });
 }
 function runDiagnostics() {
-  const notes = JSON.parse(localStorage.getItem(localNotesKey) || '[]');
-  const chats = JSON.parse(localStorage.getItem(localChatKey) || '{}');
+  const notes = JSON.parse(localStorage.getItem('smartnotes-local-notes') || '[]');
+  const chats = JSON.parse(localStorage.getItem('smartnotes-local-chat') || '{}');
   const checks = [
     { check: 'Auth API loaded', pass: Boolean(window.SmartNotes?.auth?.currentUser) },
     { check: 'Notes API loaded', pass: Boolean(window.SmartNotes?.notes?.uploadNote) },
