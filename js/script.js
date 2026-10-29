@@ -58,8 +58,15 @@ async function updateDashboardStats() {
   const notes = await window.SmartNotes?.notes?.listCommunityNotes?.({}) || [];
   const owned = user ? notes.filter(note => note.uploaderId === user.uid) : [];
   myNotes.textContent = String(owned.length);
+  const myNotesCount = document.querySelector('#my-notes-count');
+  if (myNotesCount) myNotesCount.textContent = `${owned.length} file${owned.length === 1 ? '' : 's'}`;
+  const communityCount = document.querySelector('#stat-community-notes');
+  if (communityCount) communityCount.textContent = String(notes.length);
   const chats = document.querySelector('#stat-chats');
-  if (chats) chats.textContent = String(Object.keys(JSON.parse(localStorage.getItem('smartnotes-local-chat') || '{}')).length);
+  const chatCount = Object.keys(JSON.parse(localStorage.getItem('smartnotes-local-chat') || '{}')).length;
+  if (chats) chats.textContent = String(chatCount);
+  const chatNavCount = document.querySelector('#chat-count');
+  if (chatNavCount) chatNavCount.textContent = String(chatCount);
   const greeting = document.querySelector('#dashboard-greeting');
   if (greeting && user) greeting.textContent = `Welcome back, ${user.displayName || user.email || 'Student'}`;
 }
