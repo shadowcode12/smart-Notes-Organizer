@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "**/*.html",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
