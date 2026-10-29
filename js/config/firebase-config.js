@@ -1,6 +1,6 @@
 // Firebase Auth + Firestore. Cloud Storage is intentionally unused on the Spark plan.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js';
 
@@ -34,11 +34,16 @@ export const useLocalMode = placeholderPattern.test(firebaseConfig.apiKey || '')
 export let auth = null;
 export let db = null;
 export let appCheck = null;
+export let authPersistenceReady = Promise.resolve();
 
 if (!useLocalMode) {
   try {
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+    // Use durable browser storage so Firebase restores authentication after restarts.
+    authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch(error => {
+      console.warn('Could not enable persistent authentication:', error);
+    });
     db = getFirestore(app);
 
     const recaptchaSiteKey = window.FIREBASE_RECAPTCHA_SITE_KEY || window.SMART_NOTES_RECAPTCHA_SITE_KEY;

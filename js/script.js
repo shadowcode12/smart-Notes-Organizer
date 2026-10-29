@@ -4,6 +4,7 @@ import('./config/firebase-config.js').then(async config => {
   purgeCachedSamples();
   notes.subscribeCommunityNotes();
   bindDownloadDelegation(notes);
+  window.SmartNotes.auth?.waitForAuthReady?.().then(() => { updateNavigation(); });
   window.SmartNotes.auth?.onUserChange(() => {
     notes.renderCommunityFeed();
     notes.renderMyUploadedNotes();
