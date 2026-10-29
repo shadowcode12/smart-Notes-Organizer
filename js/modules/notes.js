@@ -73,6 +73,7 @@ async function saveLargeFileChunks(noteId, dataUrl) {
 const mapNoteSnapshot = docSnap => { const data = docSnap.data(); return { ...data, localId: data.id || docSnap.id, id: docSnap.id, firestoreDocId: docSnap.id }; };
 export async function uploadNote(file, metadata = {}) {
   if (!activeUser()) throw new Error('Sign in to upload notes.');
+  if (!localMode && !activeUser().emailVerified) throw new Error('Verify your email address before uploading. Check your inbox for the verification link.');
   if (!acceptedExtensions.has(ext(file.name))) throw new Error('This file type is not supported.');
   if (file.size > MAX_FILE_SIZE) throw new Error('File size exceeds the 5 MB limit.');
   const dataUrl = await fileToDataUrl(file);

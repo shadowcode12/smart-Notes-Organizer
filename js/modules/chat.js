@@ -20,6 +20,7 @@ export async function sendMessage(partnerId, text) {
   const user = activeUser();
   const safeText = sanitizeText(text);
   if (!user || !safeText) throw new Error('Message cannot be empty.');
+  if (!localMode && !user.emailVerified) throw new Error('Verify your email address before chatting. Check your inbox for the verification link.');
   const id = conversationId(user.uid, partnerId);
   const message = { senderId: user.uid, recipientId: partnerId, text: safeText, createdAt: Date.now() };
   if (localMode) {
