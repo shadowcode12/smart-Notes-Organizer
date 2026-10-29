@@ -4,18 +4,19 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isUploader() {
       return isAuthenticated() && resource.data.uploaderId == request.auth.uid;
     }
 
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
     match /notes/{noteId} {
       allow read: if true;
-      allow create: if isAuthenticated() 
+      allow create: if isAuthenticated()
         && request.resource.data.uploaderId == request.auth.uid
         && request.resource.data.size <= 5242880
         && !('fileDataUrl' in request.resource.data);
@@ -23,19 +24,29 @@ service cloud.firestore {
 
       match /chunks/{chunkId} {
         allow read: if true;
-        allow create, update, delete: if isAuthenticated() 
-          && get(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid
+
+        // Use getAfter() so atomic writeBatch(db) uploads of note + chunks succeed
+        allow create, update: if isAuthenticated()
+          && getAfter(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid
           && request.resource.data.data is string
           && request.resource.data.data.size() <= 768000;
+
+        // Separate delete rule because request.resource is null during deletions
+        allow delete: if isAuthenticated()
+          && get(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid;
       }
     }
 
     match /conversations/{conversationId} {
-      allow read, write: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow read, update, delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
       allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
 
       match /messages/{messageId} {
-        allow read, write: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        // Use getAfter() so creating a conversation and sending the first message work cleanly
+        allow read: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create, update, delete: if isAuthenticated()
+          && request.auth.uid in getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
       }
     }
   }

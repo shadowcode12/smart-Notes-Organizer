@@ -179,7 +179,9 @@ export function bindAuthForms() {
   });
 }
 export function bindNavbar() {
-  onUserChange(user => document.querySelectorAll('.buttons').forEach(nav => {
+  onUserChange(user => {
+    document.querySelectorAll('[data-user-display]').forEach(element => { element.textContent = user?.displayName || user?.email || 'Student'; });
+    document.querySelectorAll('.buttons').forEach(nav => {
     if (!user) return;
     nav.replaceChildren();
     const name = document.createElement('span');
@@ -191,7 +193,8 @@ export function bindNavbar() {
     logout.textContent = 'Log out';
     logout.addEventListener('click', logOut);
     nav.append(name, logout);
-  }));
+    });
+  });
 }
 api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, resendVerificationEmail, isLocalMode: () => localMode };
 initAuthGuard();
