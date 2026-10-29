@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://identitytoolkit.googleapis.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com wss://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://identitytoolkit.googleapis.com; frame-src 'self' https://smartnotes-8f51d.firebaseapp.com https://accounts.google.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self';">
   <title>SmartNotes | Learn together with peers</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +25,7 @@
     <section class="hero-section">
       <div class="hero-copy"><span class="eyebrow">● 100% Free <i>•</i> AI Summaries Coming Soon <kbd>⌘K</kbd></span>
         <h1>Organize your study notes. Learn together with <em>peers.</em></h1>
-        <p>The open-access knowledge exchange built exclusively for students. Access verified course notes, lecture
+        <p>The open-access knowledge exchange built exclusively for students. Access course notes shared by classmates, lecture
           decks, and collaborative study groups — completely free forever.</p>
         <div class="hero-actions"><a class="button primary" href="pages/signup.html">Get Started Free
             <span>→</span></a><a class="button secondary" href="#community-notes">Explore Shared Notes</a></div>
@@ -40,18 +40,17 @@
           <aside><small>MY SUBJECTS　⊙</small><b>▣　CS106B Data Structures</b><span>□　Organic Chemistry
               II</span><span>□　Microeconomics 101</span><span>□　Linear Algebra MATH 51</span>
             <div class="cohort"><small>ACTIVE COHORT</small>
-              <p>● Alex is working<br>　 on Dijkstra's proof</p>
+              <p>● Sample preview<br>　 study group</p>
             </div>
           </aside>
           <article>
-            <div class="mock-tags"><span>PDF</span><i>Verified Study Guide</i></div>
+            <div class="mock-tags"><span>PDF</span><i>Sample Study Guide</i></div>
             <h3>CS106B - Graph Algorithms & Dijkstra Cheatsheet</h3>
-            <p>🔒 Professor-Verified Midterm Emphasis:<br>Remember Dijkstra assumes non-negative edge weights.</p>
+            <p>📌 Sample tip:<br>Remember Dijkstra assumes non-negative edge weights.</p>
             <pre>// Dijkstra with Min-Priority Heap
 priority_queue<pair<int,int>, vector&lt;...&gt;, greater&lt;...&gt;&gt; pq;
 dist[src] = 0;
 while (!pq.empty()) { ... }</pre>
-            <div class="comment">🧑‍🎓 Maya K. <span>"This solved question 4 on Practice Midterm 2!"</span></div>
           </article>
         </div>
       </div>
@@ -78,7 +77,7 @@ while (!pq.empty()) { ... }</pre>
             campus archive.</p>
           <div class="mini-ui search-ui">⌕ Dijkstra runtime complexity <kbd>ESC</kbd>
             <div>Lecture 14: Shortest Paths (CS 106B) <b>Slide 24</b></div>
-            <div>Final Review Guide · Stanford <b>Prof. Cain</b></div>
+            <div>Sample Final Review Guide <b>Sample</b></div>
           </div>
         </article>
         <article class="feature-card"><span class="feature-icon blue">▣</span>
@@ -99,7 +98,7 @@ while (!pq.empty()) { ... }</pre>
       <div class="section-heading">
         <div><span class="eyebrow">COLLABORATIVE KNOWLEDGE BASE</span>
           <h2>Trending Notes From Campus Classmates</h2>
-          <p>Peer-reviewed, curated, and verified student notes across top universities.</p>
+          <p>Notes uploaded by students. SmartNotes does not review or verify uploads.</p>
         </div><a href="pages/notes.html">Browse all notes →</a>
       </div>
       <div id="community-feed" class="community-feed">
