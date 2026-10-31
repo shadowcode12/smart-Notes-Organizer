@@ -1,225 +1,148 @@
 # SmartNotes
 
-SmartNotes is a responsive, multi-page study and productivity notes website. It combines a clean landing page with authentication, study-file uploads, a searchable community notes feed, and student-to-student chat.
+A student study-notes exchange. Students upload lecture notes and study guides, browse a shared community feed, download files, and message the people who wrote them.
 
-The project is currently a client-side web application. It can run in a browser with no backend setup by using its local fallback mode, or it can connect to Firebase Authentication and Cloud Firestore for shared accounts, notes, and conversations.
+SmartNotes is a static, multi-page website built with plain HTML, CSS, and browser JavaScript. It uses Firebase Authentication and Cloud Firestore for accounts, notes, and chat. For demos, it can also run without any Firebase setup by using a local fallback mode.
+
+> **Status:** prototype. The Firestore security rules in this repository must be deployed to your Firebase project before real users use it. See [Security](#security).
 
 ## Contents
 
 - [Features](#features)
-- [Application pages](#application-pages)
-- [How the application works](#how-the-application-works)
-- [Technology](#technology)
+- [Pages](#pages)
+- [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
 - [Getting started](#getting-started)
-- [Firebase configuration](#firebase-configuration)
-- [Local fallback mode](#local-fallback-mode)
+- [Firebase setup](#firebase-setup)
+- [Local mode](#local-mode)
 - [Data model](#data-model)
-- [Supported files and storage limits](#supported-files-and-storage-limits)
-- [Diagnostics](#diagnostics)
+- [File uploads and storage](#file-uploads-and-storage)
+- [Testing](#testing)
 - [Deployment](#deployment)
-- [Security and production considerations](#security-and-production-considerations)
+- [Security](#security)
 - [Troubleshooting](#troubleshooting)
-- [Current limitations](#current-limitations)
-- [Potential next steps](#potential-next-steps)
+- [Known limitations](#known-limitations)
+- [Roadmap](#roadmap)
+- [License](#license)
 
 ## Features
 
-### Landing page
+**Accounts**
 
-- Hero section with calls to action for signing up and exploring features.
-- Navigation to Features, Templates, and Blog pages.
-- Product showcase for notebooks, tasks, reminders, documents, and AI summaries.
-- Responsive study-file upload area.
-- Community study-notes feed with:
-  - Text search across titles, descriptions, subjects, authors, and tags.
-  - Subject filtering.
-  - File-extension filtering.
-  - A logged-in user's **My Notes** filter.
-  - Authenticated downloads.
-  - Author messaging.
-  - Author-only note deletion, including associated Firestore file chunks.
-- Real-time Firestore synchronization for notes and one-to-one conversations.
-- Responsive chat drawer for conversations with note authors.
+- Email and password sign-up and login, with a verification email after sign-up.
+- Google sign-in.
+- Password reset by email.
+- Passwords must be at least 10 characters and include an uppercase letter, a lowercase letter, and a number or symbol.
+- Sessions persist across reloads until you log out.
 
-### Authentication
+**Uploading notes**
 
-- Email/password sign-up.
-- Email/password login.
-- Google sign-in when Firebase is configured and authorized.
-- Sign-out from the navigation bar.
-- Authenticated and guest-only page flows.
-- Local browser authentication fallback for development and demos.
+- Select or drag in several files at once. Each file can have a title, subject, tags, and a description.
+- Accepted types: PDF, DOC, DOCX, PPT, PPTX, JPG, JPEG, PNG, GIF, and WEBP.
+- Maximum size is 5 MB per file.
+- Only verified accounts can upload.
 
-### Study-file vault
+**Community feed**
 
-Users can select or drag and drop multiple files into the upload widget. Each file can have:
+- Live updates when notes are added or deleted.
+- Search by title, description, subject, author, or tag.
+- Filter by subject or file type, or show only your own notes.
+- Free, one-click downloads for signed-in users.
+- Authors can delete their own notes.
 
-- A title.
-- A subject or category.
-- Comma-separated tags.
-- A short description.
+**Chat**
 
-Selecting files previews their names and sizes with per-file remove buttons. Nothing is published until the user clicks **Publish Upload Note**, which uploads each selected file and refreshes the community feed and "My Uploaded Notes" list.
+- One-to-one messages between a student and the author of a note.
+- Conversations update in real time.
+- Only verified accounts can send messages.
 
-Uploaded files are represented in the community feed and can be downloaded by signed-in users.
+**Dashboard**
 
-### Community notes
+- A personal dashboard with your upload count and chat count.
+- A My Notes page for managing your uploads.
+- A full-page chat workspace.
 
-Community notes use a Firestore `onSnapshot` listener as the source of truth when Firebase is available, so uploads and deletions appear for other users without a refresh. In local mode they are loaded from browser storage. The feed supports search, subject/file-type filters, and a logged-in **My Notes** filter.
+## Pages
 
-There are no seeded demo notes. When the collection is empty the grid renders a centered empty state: *"No study notes uploaded yet. Be the first student to share a resource!"* Any sample notes cached in a previous session are removed from browser storage on startup.
-
-### Authenticated workspace
-
-Signing in or signing up redirects to the student dashboard, which shows a personalized welcome banner, stat cards for uploaded notes and active chats, recent community notes, and the user's own uploads.
-
-- **Dashboard** (`pages/dashboard.html`) — stats, quick upload, and recent notes.
-- **My Notes** (`pages/notes.html`) — upload manager, "My Uploaded Notes" grid with free download and author-only delete, plus a full community browser.
-- **Chats** (`pages/chats.html`) — full-page two-column chat with a searchable conversation list on the left and a live thread on the right.
-
-While signed in, the navigation bar on every page shows **Dashboard**, **Notes**, **Chats**, **Templates**, and **Blog**. A **🔍** search button in the navbar focuses the community search field on the current page, or forwards the query to `pages/notes.html?q=...` on pages without a feed.
-
-### Messaging
-
-Users can open a conversation from a community note and send messages to its author. Firestore conversations update in real time. Local mode stores chat threads in `localStorage`.
-
-### Downloads are free and direct. Signed-in users can download a community note with one click; the existing chunked file reconstruction remains unchanged
-
-## Application pages
-
-| Page | Path | Purpose |
+| Page | File | Purpose |
 | --- | --- | --- |
-| Home | `index.html` | Product landing page, file upload widget, and community feed |
-| Dashboard | `pages/dashboard.html` | Authenticated student dashboard with stats, quick upload, and recent notes |
-| My Notes | `pages/notes.html` | Upload manager with "My Uploaded Notes" and full community browsing |
-| Chats | `pages/chats.html` | Full-screen two-column student chat workspace |
-| Features | `pages/features.html` | Detailed feature overview and community experience |
-| Templates | `pages/templates.html` | Workspace and note-template marketing page |
-| Blog | `pages/blog.html` | Productivity and study-related editorial content |
-| Login | `pages/login.html` | Existing-user sign-in |
+| Home | `index.html` | Landing page, upload area, and community preview |
+| Dashboard | `pages/dashboard.html` | Signed-in overview and quick upload |
+| My Notes | `pages/notes.html` | Upload manager, your notes, and the full community feed |
+| Chats | `pages/chats.html` | Two-column chat workspace |
+| Features | `pages/features.html` | Feature overview |
+| Templates | `pages/templates.html` | Workspace and template overview |
+| Blog | `pages/blog.html` | Study-tips articles |
+| Log in | `pages/login.html` | Existing-user sign-in |
 | Sign up | `pages/signup.html` | New-user registration |
+| Terms, Privacy, Guidelines | `pages/terms.html`, `pages/privacy.html`, `pages/guidelines.html` | Legal and community pages |
 
-All pages share the main stylesheet and load the same Firebase, authentication, notes, chat, and application modules where needed.
+Signed-in pages (dashboard, notes, chats) redirect logged-out visitors to the log-in page.
 
-## How the application works
+## Tech stack
 
-1. The browser loads `js/config/firebase-config.js`.
-2. If a usable Firebase configuration is available, the app initializes Firebase Authentication and Cloud Firestore.
-3. If Firebase is unavailable, invalid, blocked by the current host, or opened in an unsupported environment, the app switches to local mode.
-4. The page dynamically loads the feature modules through `js/script.js`.
-5. No sample notes are seeded in either mode. Cached sample notes are purged from browser storage on startup, and an empty collection renders a centered empty-state card.
-6. Authentication state controls uploads, downloads, messaging, note ownership controls, and the navigation buttons.
-7. Authenticated sign-up, sign-in, Google sign-in, and auth-state restoration synchronize `users/{uid}` with `displayName`, `email`, and `updatedAt`.
-8. Live Firestore permission or security-rule failures are surfaced to the user; they do not silently switch the app to local mode. Local fallback is reserved for missing configuration, invalid keys, or offline/network failures.
-
-The app does not currently use Firebase Cloud Storage. File contents are stored as data URLs:
-
-- Small files are stored inline with note metadata.
-- Larger files are split into chunks and stored in IndexedDB locally or in a Firestore `chunks` subcollection when using Firebase.
-
-## Technology
-
-- Semantic HTML5.
-- CSS3 with responsive layouts and custom components.
-- Modern browser JavaScript using ES modules.
-- Firebase Authentication.
-- Cloud Firestore.
-- `localStorage` for local sessions, metadata, and chat.
-- IndexedDB for larger local file contents.
-- Google Fonts Inter, loaded from Google Fonts.
-- Firebase browser modules loaded from `gstatic.com`.
-
-The repository contains a `package.json` with Firebase as a dependency, but the current browser modules import Firebase's hosted browser builds directly. There is no bundler, framework, or application build step at present.
+- HTML5, CSS3, and ES modules. No framework and no bundler.
+- Firebase Authentication and Cloud Firestore, loaded from Google's CDN (`gstatic.com`), version 10.12.2.
+- `localStorage` and IndexedDB for local mode.
+- Vercel for hosting the website.
+- Firebase CLI for deploying Firestore rules.
+- Node.js test runner with `@firebase/rules-unit-testing` for the rules tests.
+- Python with FastAPI for a backend skeleton (see [Project structure](#project-structure)).
 
 ## Project structure
 
 ```text
-smart Notes Organizer/
-├── index.html
-├── pages/
-│   ├── blog.html
-│   ├── chats.html
-│   ├── dashboard.html
-│   ├── features.html
-│   ├── login.html
-│   ├── notes.html
-│   ├── signup.html
-│   └── templates.html
-├── css/
-│   └── style.css
+smart-notes-organizer/
+├── index.html                  Landing page
+├── pages/                      All other website pages
+├── css/style.css               Shared styles
 ├── js/
-│   ├── config/
-│   │   └── firebase-config.js
-│   ├── modules/
-│   │   ├── auth.js
-│   │   ├── chat.js
-│   │   ├── notes.js
-│   └── script.js
-├── assets/
-│   └── images/
-├── package.json
-├── package-lock.json
+│   ├── config/firebase-config.js   Firebase setup and local-mode detection
+│   ├── modules/auth.js             Sign-up, login, Google sign-in, route guards
+│   ├── modules/notes.js            Uploads, feed, downloads, deletes
+│   ├── modules/chat.js             Conversations and messages
+│   └── script.js                   Navigation, search, and diagnostics
+├── tests/
+│   └── firestore.rules.test.js     Firestore rules tests (emulator)
+├── backend/                        Python backend skeleton (not deployed)
+├── docs/
+│   └── BACKEND_PLAN.md             Planned backend scope and endpoints
+├── firestore.rules                 Firestore security rules
+├── firebase.json                   Firebase config (rules and hosting headers)
+├── vercel.json                     Vercel config (security headers)
+├── package.json                    npm scripts and dependencies
 └── README.md
 ```
-
-### Module responsibilities
-
-- `js/config/firebase-config.js` initializes Firebase, determines whether local mode is needed, and resolves links between root and `pages/` routes.
-- `js/modules/auth.js` implements sign-up, login, Google sign-in, logout, auth state listeners, guest/auth guards, and navigation state.
-- `js/modules/notes.js` validates, sanitizes, stores, subscribes to, filters, renders, deletes, and downloads study files, and renders the current user's uploaded notes.
-- `js/modules/chat.js` manages the chat drawer, the full-page chat workspace, sanitized local threads, and Firestore message streams.
-- `js/script.js` wires module startup, authenticated navigation, global search, cached sample cleanup, and diagnostics.
-- `css/style.css` contains the shared visual system and responsive component styles.
 
 ## Getting started
 
 ### Requirements
 
-- A modern browser with ES module, `localStorage`, IndexedDB, and drag-and-drop support.
-- Node.js and npm are optional for the current static frontend, but useful for installing the declared dependency.
-- A local HTTP server is recommended. Opening module pages directly with `file://` can trigger browser security restrictions.
+- A modern browser with ES module support.
+- A local web server. Opening the HTML files directly (`file://`) blocks the module imports.
+- Node.js 18 or newer, only if you want to run the rules tests.
 
-### Run locally
+### Run the site locally
 
-1. Clone or download the repository.
-2. Open a terminal in the project directory.
-3. Optionally install the declared dependency:
-
-   ```bash
-   npm install
-   ```
-
-4. Start any static HTTP server. For example, with Python:
+1. Clone the repository and open its folder.
+2. Start any static web server. For example, with Python:
 
    ```bash
    python -m http.server 8000
    ```
 
-5. Open [http://localhost:8000](http://localhost:8000).
+3. Open http://localhost:8000.
 
-Alternatively, use the Live Server extension in VS Code or another static-file server. No `npm start` script is currently defined.
+Without a Firebase configuration, the site runs in [local mode](#local-mode).
 
-### Try the local mode
+## Firebase setup
 
-The app can be tested without a Firebase project:
-
-1. Open the site through a local HTTP server.
-2. Create an account on the Sign up page.
-3. Log in with that account.
-4. Upload a supported study file.
-5. Use the community feed to search, download, and message.
-
-Local-mode data belongs to the current browser profile and is not shared with other browsers or users.
-
-## Firebase configuration
-
-The default configuration is in `js/config/firebase-config.js`. A page can override it before the Firebase module loads by defining:
+The default Firebase configuration lives in `js/config/firebase-config.js`. To use a different project without editing that file, define this before the Firebase module loads:
 
 ```html
 <script>
   window.SMART_NOTES_FIREBASE_CONFIG = {
-    apiKey: "your-api-key",
+    apiKey: "your-web-api-key",
     authDomain: "your-project.firebaseapp.com",
     projectId: "your-project-id",
     messagingSenderId: "your-sender-id",
@@ -228,231 +151,141 @@ The default configuration is in `js/config/firebase-config.js`. A page can overr
 </script>
 ```
 
-The override must appear before the Firebase configuration module is imported. For a production deployment, prefer injecting this configuration during deployment rather than editing source code per environment.
+Steps to set up a Firebase project:
 
-### Firebase project setup
+1. Create a Firebase project and register a web app.
+2. In **Authentication**, enable the **Email/Password** provider, and enable **Google** if you want Google sign-in.
+3. Add your website's domain (and `localhost` for development) under **Authentication → Settings → Authorized domains**.
+4. Create a **Cloud Firestore** database.
+5. Deploy the security rules from this repository:
 
-1. Create a Firebase project.
-2. Register a web app and copy its web configuration.
-3. Enable **Authentication**.
-4. Enable the **Email/Password** provider.
-5. Enable **Google** if Google sign-in is required.
-6. Create a **Cloud Firestore** database.
-7. Add the deployed domain and local development domain to Firebase Authentication authorized domains.
-8. Configure Firestore security rules before allowing untrusted users to write data.
-9. Provide the configuration through `window.SMART_NOTES_FIREBASE_CONFIG`.
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase deploy --only firestore:rules --project your-project-id
+   ```
 
-The app uses these Firestore paths:
+The web API key is not a secret. It identifies your web app. Access control comes from Firebase Authentication and the Firestore security rules, so the rules must be deployed.
 
-```text
-users/{uid}
-notes/{noteId}
-notes/{noteId}/chunks/{chunkIndex}
-conversations/{conversationId}/messages/{messageId}
-```
+## Local mode
 
-Firebase client configuration values such as `apiKey` identify a web application; they are not a replacement for Firestore rules or Authentication controls. Never treat the client configuration as a secret.
+Local mode turns on automatically when Firebase is not configured, the API key is invalid, or the browser is offline. In local mode, everything is stored in the browser:
 
-## Local fallback mode
-
-Local mode is selected only when Firebase configuration is missing/placeholder, a Firebase API key is invalid, or the browser is offline / experiences a transient network failure. With valid configuration and a reachable Firebase service, Firestore remains the primary source of truth. Permission-denied and security-rule errors are not treated as permission to use local data; they are surfaced so the deployment can be corrected.
-
-The following browser data is used:
-
-| Data | Browser storage |
+| Data | Where it is stored |
 | --- | --- |
-| Local accounts and current session | `localStorage` |
-| Note metadata and small file data | `localStorage` |
-| Larger file chunks | IndexedDB database `smartnotes-files` |
-| Chat threads | `localStorage` |
-| Support totals | `localStorage` |
+| Accounts and session | `localStorage` |
+| Note details | `localStorage` |
+| Note file contents | IndexedDB (`smartnotes-files`) |
+| Chat messages | `localStorage` |
 
-The app does not seed demo notes. Any previously cached sample notes are purged from browser storage on startup. Local-mode passwords are stored in browser storage for demo purposes only and must not be used for real accounts.
+Local-mode accounts are not shared between browsers or people, and local-mode passwords are stored in plain text. Use local mode for demos only.
+
+Permission and security-rule errors from Firebase do not switch to local mode. They are shown to the user so the configuration can be fixed.
 
 ## Data model
 
-### User document
+All data lives in Firestore unless noted.
 
-Stored at `users/{uid}`. The application writes the profile on sign-up and updates it after email/password login, Google login, and Firebase auth-state restoration:
+**`users/{uid}`**: `displayName`, `email`, `updatedAt`.
 
-```text
-displayName
-email
-updatedAt            server timestamp
-photoURL             optional
-createdAt            legacy/optional server timestamp
-lastLoginAt          legacy/optional server timestamp
+**`notes/{noteId}`**: `id`, `title`, `description`, `subject`, `tags`, `fileName`, `mimeType`, `fileSize`, `extension`, `uploaderId`, `uploaderName`, `createdAt`, `chunkCount`, `isChunked`.
+
+**`notes/{noteId}/chunks/{index}`**: `index` (0 to 14) and `data` (a base64 slice of the file, at most 768,000 characters).
+
+**`conversations/{conversationId}`**: `participants` (exactly two user IDs), `participantNames`, `lastMessage`, `updatedAt`.
+
+**`conversations/{conversationId}/messages/{messageId}`**: `senderId`, `recipientId`, `text` (at most 2,000 characters), `createdAt`.
+
+A conversation ID is the two user IDs sorted and joined with an underscore, so both people always reach the same conversation.
+
+## File uploads and storage
+
+- Maximum file size: **5 MB**.
+- Every file is stored as base64 chunks of about 500 KB each, with at most 15 chunks per file.
+- Chunks are stored in a Firestore subcollection of the note when Firebase is active, and in IndexedDB in local mode.
+- Files are not stored in Firebase Cloud Storage yet.
+
+Client-side checks are for user experience. The Firestore rules enforce the size and structure limits on the server side.
+
+## Testing
+
+### Firestore rules tests
+
+The rules tests run against the Firestore emulator, so they need Java and the Firebase CLI:
+
+```bash
+npm install
+npm test
 ```
 
-### Note document
+The test suite covers public and private reads, verified-account requirements, note and chunk ownership, chunk limits, batch deletes, and message sender and participant checks. All six tests should pass. Lines starting with `PERMISSION_DENIED` are normal: they are denied writes that the tests expect.
 
-Stored at `notes/{noteId}`:
+### Backend tests
 
-```text
-title
-description
-subject
-tags                 array of strings
-fileName
-extension
-size
-contentType
-uploaderId
-uploaderName
-createdAt
-storageMode          "inline" or "chunks"
-fileDataUrl          present for small files
-chunkCount           present for larger files
+```bash
+pip install -r backend/requirements.txt
+python -m pytest backend/tests
 ```
-
-### Chat message
-
-Stored at `conversations/{conversationId}/messages/{messageId}` and streamed with a Firestore `onSnapshot` listener while a conversation is open:
-
-```text
-senderId
-recipientId
-text
-createdAt
-```
-
-Conversation IDs are deterministic: the two user IDs are sorted and joined with an underscore. This allows both participants to address the same conversation.
-
-## Supported files and storage limits
-
-Accepted extensions:
-
-```text
-PDF, DOC, DOCX, PPT, PPTX, JPG, JPEG, PNG, GIF, WEBP
-```
-
-The browser validates file extensions before upload. MIME types are retained as metadata but extension validation is the primary client-side check.
-
-Storage behavior:
-
-- Files up to approximately `700 KB` are stored inline.
-- Larger files are split into approximately `500 KB` base64 chunks.
-- Local large-file chunks use IndexedDB.
-- Firebase large-file chunks use the note's Firestore `chunks` subcollection.
-
-These limits are implementation details, not a substitute for server-side quotas, validation, or content scanning.
-
-## Diagnostics
-
-When the site is loaded, open the browser developer console and run:
-
-```js
-window.runSmartNotesDiagnostics()
-```
-
-The diagnostic checks verify:
-
-- Authentication API availability.
-- Notes API availability.
-- Support modal binding.
-- Chat drawer binding.
-- Community feed binding.
-- Seeded local notes.
-- Seeded local chat threads.
-
-The function prints a table and returns `true` only when every check passes.
 
 ## Deployment
 
-SmartNotes is a static site and can be deployed to any host that serves HTML, CSS, JavaScript, and the `pages/` directory without rewriting paths incorrectly.
+The website is a static site and is deployed to Vercel. `vercel.json` sets the Content Security Policy and clickjacking headers for every page.
 
-Suitable hosting options include:
+Deploying the site does not deploy the Firestore rules. Deploy the rules separately whenever they change (see [Firebase setup](#firebase-setup)).
 
-- Firebase Hosting.
-- GitHub Pages.
-- Netlify.
-- Vercel static hosting.
-- Cloudflare Pages.
-- Any conventional web server.
+Before a release:
 
-Before deployment:
+1. Run `npm test` and confirm all rules tests pass.
+2. Confirm the Firestore rules are deployed to the production project.
+3. Test sign-up with email verification, login, Google sign-in, upload, download, chat, and delete on the deployed domain.
 
-1. Serve the project from the intended HTTPS domain.
-2. Configure the Firebase web app for that domain.
-3. Add the domain to Firebase Authentication authorized domains.
-4. Set restrictive Firestore rules.
-5. Test both guest and authenticated flows.
-6. Confirm that all relative links work from both the root page and pages under `pages/`.
+## Security
 
-## Security and production considerations
+The current security measures are:
 
-The current repository is suitable for a prototype or educational demo, not a production data platform without additional backend controls.
+- Firestore rules that require verified email for writes, restrict note and chunk changes to the owner, and require participants for chat.
+- Content Security Policy that blocks inline scripts and restricts where scripts, frames, and connections can come from.
+- Clickjacking protection through `frame-ancestors 'none'` and `X-Frame-Options: DENY`.
+- Client-side password rules and input sanitization.
 
-Before production use:
+Known gaps before a public launch:
 
-- Replace local-mode authentication with a real identity system for deployed environments.
-- Never store plaintext passwords. Local mode does this only to make offline demos work.
-- Write and test Firestore rules for users, notes, chunks, and conversations.
-- Enforce authorization on the server/database, not only through browser UI checks.
-- Validate file size, MIME type, extension, and content server-side.
-- Add malware/content scanning for uploaded files.
-- Use a dedicated object-storage service for files rather than placing large base64 content in Firestore.
-- Review privacy, retention, deletion, and copyright policies for community-shared files.
-- Keep Firebase configuration environment-specific and avoid committing unrelated secrets.
+- Route guards and form checks run only in the browser. Server-side rules are the real protection.
+- The password policy is checked only in the browser. Enable Firebase's password policy in the console as well.
+- Files are not scanned for malware, and the file type check is based on the file extension.
+- Local-mode accounts store passwords in plain text.
+- Notes uploaded before the ownership fields existed cannot be edited or deleted by their authors until they are migrated.
 
 ## Troubleshooting
 
-### The page is blank or modules do not load
+**The page is blank or the scripts don't load.** Serve the folder over HTTP. Don't open the HTML files directly.
 
-Serve the project over HTTP instead of opening `index.html` directly with `file://`. Browser module and Firebase requests can be blocked from local files.
+**The site says it is in local mode.** Check that the Firebase configuration is correct, the domain is in Authorized domains, and Authentication and Firestore are enabled.
 
-### The app says it is using local mode
+**Uploads or messages fail with a permission error.** Confirm the account is verified (check your email for the verification link), and confirm the Firestore rules are deployed.
 
-Check that:
+**Google sign-in does not open.** Allow pop-ups for the site, and make sure the domain is listed under Authorized domains.
 
-- The Firebase configuration is valid.
-- The current hostname is an authorized Firebase Authentication domain.
-- Firebase Authentication and Firestore are enabled.
-- The configuration override is defined before the Firebase module loads.
+**`npm test` says "port taken".** Another program is using port 8080. The emulator needs that port. Close the program, or find it with `netstat -ano | findstr :8080`.
 
-Local mode is an intentional fallback and still supports basic demo flows.
+**`npm test` says "Missing script" or "module not found".** Run `npm install` first.
 
-### Uploads do not appear
+## Known limitations
 
-- Sign in before uploading.
-- Check that the extension is in the supported list.
-- Confirm that the file input accepted the file.
-- Check the upload status text and browser console.
-- In Firebase mode, inspect Firestore permissions and indexes.
+- No automated tests for the frontend.
+- No moderation, reporting, or account-deletion flow yet.
+- Files are stored in Firestore chunks, not in object storage.
+- The AI study assistant shown on the homepage is a planned feature and is not implemented.
+- Search runs in the browser over the notes that are loaded, so it won't scale to a large collection.
 
-### Google sign-in fails
+## Roadmap
 
-Enable the Google provider and add the current host to Firebase Authentication's authorized domains. Popup blockers can also prevent the provider window from opening.
-
-### Community notes cannot be downloaded
-
-Downloads require an authenticated user. In Firebase mode, verify that the note document and any required chunk documents are readable under the Firestore rules.
-
-## Current limitations
-
-- There is no application build pipeline or automated test suite.
-- The Firebase configuration currently includes a default project configuration in source.
-- Cloud Storage is intentionally not used.
-- Tips are recorded in Firestore, but payment collection is not integrated; creator links are displayed for external payment.
-- The UI describes AI-powered organization, but no AI classification or summarization service is wired into the current implementation.
-- The local authentication fallback is for demos only.
-- Client-side validation does not provide server-side security.
-- Large files represented as base64 data can be inefficient and may encounter browser or Firestore quotas.
-- Community note editing, reporting, moderation, and account deletion are not implemented.
-- The full-page chat workspace lists local-mode conversations; a Firestore conversation index for all threads is not implemented.
-
-## Potential next steps
-
-- Add a bundler and environment-specific configuration.
-- Move file content to Firebase Cloud Storage or another object-storage service.
-- Add Firestore security rules and automated rules tests.
-- Add server-side upload validation and scanning.
-- Add note editing, deletion, moderation, and reporting.
-- Add note versioning and richer search.
-- Add an AI service for tagging, summaries, and semantic search.
-- Add unit, integration, accessibility, and end-to-end tests.
-- Add CI checks for formatting, linting, and deployment.
+1. Move file storage to Firebase Cloud Storage with signed URLs.
+2. Build the backend for file processing, moderation, and account deletion (see `docs/BACKEND_PLAN.md`).
+3. Add reporting, admin review, and takedown tools.
+4. Add frontend tests and continuous integration.
+5. Add the AI study assistant (summaries and flashcards) on the server.
 
 ## License
 
-No license file is currently included. Add an explicit license before distributing or reusing the project publicly.
+No license has been chosen yet. Add a `LICENSE` file before you share or reuse the code publicly.
