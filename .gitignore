@@ -13,3 +13,7 @@ coverage/
 # Operating system files
 .DS_Store
 Thumbs.db
+node_modules/
+__pycache__/
+*.pyc
+*-debug.log
