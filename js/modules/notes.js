@@ -71,6 +71,60 @@ async function saveLargeFileChunks(noteId, dataUrl) {
   await batch.commit();
   return chunkCount;
 }
+// Thumbnails are generated in the browser. A failure just means no thumbnail; the upload still succeeds.
+const THUMB_MAX = 320;
+const PDFJS_VERSION = '3.11.174';
+const THUMB_IMAGE_TYPES = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
+let pdfJsPromise;
+const loadPdfJs = () => {
+  if (!pdfJsPromise) {
+    pdfJsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = () => { pdfJsPromise = null; reject(new Error('Could not load the PDF preview library.')); };
+      document.head.append(script);
+    });
+  }
+  return pdfJsPromise;
+};
+const thumbScale = (width, height) => THUMB_MAX / Math.max(width, height);
+const canvasToThumb = canvas => canvas.toDataURL('image/jpeg', 0.75);
+const imageThumbnail = async file => {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, thumbScale(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  return canvasToThumb(canvas);
+};
+const pdfThumbnail = async file => {
+  const pdfjs = await loadPdfJs();
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise;
+  const page = await pdf.getPage(1);
+  const base = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: thumbScale(base.width, base.height) });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(viewport.width));
+  canvas.height = Math.max(1, Math.round(viewport.height));
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvasToThumb(canvas);
+};
+const makeThumbnail = async file => {
+  try {
+    const type = ext(file.name);
+    if (THUMB_IMAGE_TYPES.has(type)) return await imageThumbnail(file);
+    if (type === 'pdf') return await pdfThumbnail(file);
+  } catch (error) {
+    console.warn('Thumbnail skipped for', file.name, error);
+  }
+  return '';
+};
 const mapNoteSnapshot = docSnap => { const data = docSnap.data(); return { ...data, localId: data.id || docSnap.id, id: docSnap.id, firestoreDocId: docSnap.id }; };
 export async function uploadNote(file, metadata = {}) {
   if (!activeUser()) throw new Error('Sign in to upload notes.');
@@ -80,6 +134,8 @@ export async function uploadNote(file, metadata = {}) {
   const dataUrl = await fileToDataUrl(file);
   const note = noteMetadata(file, dataUrl, metadata);
   note.searchTerms = buildSearchTerms(note);
+  const thumbnail = await makeThumbnail(file);
+  if (thumbnail) note.thumbnail = thumbnail;
   if (localMode) {
     saveNotes([note, ...readNotes()]);
     await saveLargeFileChunks(note.id, dataUrl);
@@ -131,7 +187,7 @@ export async function listCommunityNotes(filters = {}) {
 export async function renderMyUploadedNotes(container = document.querySelector('#my-uploaded-notes-grid')) { if (!container) return []; const notes = filterNotes(localMode ? readNotes() : currentNotes, { mine: true }); container.replaceChildren(); if (!notes.length) { const empty = document.createElement('p'); empty.className = 'empty-state empty-state-card'; empty.textContent = 'You have not uploaded any study notes yet.'; container.append(empty); return notes; } notes.forEach(note => container.append(createCard(note))); return notes; }
 const showDownloadToast = text => { const toast = document.createElement('div'); toast.className = 'download-toast'; toast.textContent = text; Object.assign(toast.style, { position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: '10000', padding: '12px 18px', borderRadius: '999px', background: '#172033', color: '#fff' }); document.body.append(toast); setTimeout(() => toast.remove(), 3000); };
 const handleDownload = async note => { if (!activeUser()) { window.location.href = window.location.pathname.includes('/pages/') ? 'login.html' : 'pages/login.html'; return; } showDownloadToast('Downloading file...'); try { await downloadNoteFile(note); } catch (error) { showDownloadToast(error.message); } };
-const createCard = note => { const card = document.createElement('article'); card.className = 'note-card-community'; const preview = document.createElement('div'); preview.className = `note-preview preview-${note.extension || 'pdf'}`; preview.textContent = (note.extension || 'PDF').toUpperCase(); card.append(preview); const title = document.createElement('h3'); title.textContent = note.title || 'Untitled note'; card.append(title); const description = document.createElement('p'); description.textContent = note.description || 'Shared study guide from a campus classmate.'; card.append(description); const meta = document.createElement('div'); meta.className = 'note-meta';[note.subject || 'General', (note.extension || '').toUpperCase(), `By ${note.uploaderName || 'Anonymous'}`].forEach(value => { const span = document.createElement('span'); span.textContent = value; meta.append(span); }); card.append(meta); const actions = document.createElement('div'); actions.className = 'note-card-actions'; const download = document.createElement('button'); download.className = 'button primary btn-download'; download.type = 'button'; download.textContent = 'Free Download'; download.dataset.downloadNote = note.id; download.addEventListener('click', () => handleDownload(note)); actions.append(download); if (note.uploaderId !== activeUser()?.uid) { const message = document.createElement('button'); message.className = 'button secondary'; message.type = 'button'; message.textContent = 'Message author'; message.addEventListener('click', () => window.SmartNotes.chat?.openChat(note.uploaderId, note.uploaderName)); actions.append(message); } else { const remove = document.createElement('button'); remove.className = 'button secondary danger-button'; remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', async () => { if (confirm('Delete this note permanently?')) { remove.disabled = true; try { await deleteNote(note); await renderMyUploadedNotes(); } catch (error) { remove.disabled = false; alert(error.message); } } }); actions.append(remove); } card.append(actions); return card; };
+const createCard = note => { const card = document.createElement('article'); card.className = 'note-card-community'; const preview = document.createElement('div'); preview.className = `note-preview preview-${note.extension || 'pdf'}`; if (note.thumbnail) { const img = document.createElement('img'); img.src = note.thumbnail; img.alt = ''; img.loading = 'lazy'; Object.assign(img.style, { width: '100%', height: '100%', objectFit: 'cover', display: 'block' }); preview.append(img); } else { preview.textContent = (note.extension || 'PDF').toUpperCase(); } card.append(preview); const title = document.createElement('h3'); title.textContent = note.title || 'Untitled note'; card.append(title); const description = document.createElement('p'); description.textContent = note.description || 'Shared study guide from a campus classmate.'; card.append(description); const meta = document.createElement('div'); meta.className = 'note-meta';[note.subject || 'General', (note.extension || '').toUpperCase(), `By ${note.uploaderName || 'Anonymous'}`].forEach(value => { const span = document.createElement('span'); span.textContent = value; meta.append(span); }); card.append(meta); const actions = document.createElement('div'); actions.className = 'note-card-actions'; const download = document.createElement('button'); download.className = 'button primary btn-download'; download.type = 'button'; download.textContent = 'Free Download'; download.dataset.downloadNote = note.id; download.addEventListener('click', () => handleDownload(note)); actions.append(download); if (note.uploaderId !== activeUser()?.uid) { const message = document.createElement('button'); message.className = 'button secondary'; message.type = 'button'; message.textContent = 'Message author'; message.addEventListener('click', () => window.SmartNotes.chat?.openChat(note.uploaderId, note.uploaderName)); actions.append(message); } else { const remove = document.createElement('button'); remove.className = 'button secondary danger-button'; remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', async () => { if (confirm('Delete this note permanently?')) { remove.disabled = true; try { await deleteNote(note); await renderMyUploadedNotes(); } catch (error) { remove.disabled = false; alert(error.message); } } }); actions.append(remove); } card.append(actions); return card; };
 export async function renderCommunityFeed(container = document.querySelector('#community-feed'), filters = currentFilters) { if (!container) return []; showLoading(true); try { const notes = await listCommunityNotes(filters); container.replaceChildren(); if (!notes.length) { const empty = document.createElement('p'); empty.className = 'empty-state empty-state-card'; empty.textContent = 'No study notes uploaded yet. Be the first student to share a resource!'; container.append(empty); } else notes.forEach(note => container.append(createCard(note))); return notes; } catch (error) { container.textContent = error.message; return []; } finally { showLoading(false); } }
 export function subscribeCommunityNotes(container = document.querySelector('#community-feed')) { if (localMode) { renderCommunityFeed(container); return () => { }; } unsubscribeNotes?.(); showLoading(true); unsubscribeNotes = onSnapshot(query(collection(db, 'notes'), orderBy('createdAt', 'desc'), limit(200)), snapshot => { currentNotes = snapshot.docs.map(mapNoteSnapshot).filter(note => !isSampleNote(note)); renderCommunityFeed(container, currentFilters); }, error => { if (isLocalFallbackError(error)) { enableLocalMode(error); renderCommunityFeed(container, currentFilters); } else { if (container) container.textContent = 'Unable to load community notes.'; showLoading(false); console.error(error); } }); return unsubscribeNotes; }
 async function resolveFirestoreDocId(noteId) { const snapshot = await getDocs(query(collection(db, 'notes'), where('id', '==', noteId))); return snapshot.docs[0]?.id || ''; }

@@ -152,3 +152,14 @@ test('search terms are optional but limited to 40 entries', async () => {
   );
   await assertFails(setDoc(doc(uploader, 'notes/s4'), { ...note(), searchTerms: 'not a list' }));
 });
+
+test('thumbnails are optional but limited to 100000 characters', async () => {
+  const uploader = user('uploader');
+  await assertSucceeds(
+    setDoc(doc(uploader, 'notes/t1'), { ...note(), thumbnail: 'data:image/jpeg;base64,abc' })
+  );
+  await assertFails(
+    setDoc(doc(uploader, 'notes/t2'), { ...note(), thumbnail: 'x'.repeat(100001) })
+  );
+  await assertFails(setDoc(doc(uploader, 'notes/t3'), { ...note(), thumbnail: 12345 }));
+});
