@@ -1,52 +1,94 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    // Email/password accounts must verify their address before writing content.
+    // Google sign-in accounts always have email_verified = true.
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
     }
 
     function isUploader() {
       return isAuthenticated() && resource.data.uploaderId == request.auth.uid;
     }
 
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+    function noteUploaderIs(noteId) {
+      return get(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid;
     }
 
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Note metadata is public so the community feed works for everyone.
     match /notes/{noteId} {
       allow read: if true;
-      allow create: if isAuthenticated()
+
+      allow create: if isVerified()
         && request.resource.data.uploaderId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.size is int
+        && request.resource.data.size > 0
         && request.resource.data.size <= 5242880
         && !('fileDataUrl' in request.resource.data);
-      allow update, delete: if isUploader();
 
+      // Owner can edit metadata only. Ownership, file size and inline data are locked.
+      allow update: if isUploader()
+        && request.resource.data.uploaderId == resource.data.uploaderId
+        && request.resource.data.size == resource.data.size
+        && !('fileDataUrl' in request.resource.data);
+
+      allow delete: if isUploader();
+
+      // File contents require sign-in. Chunks are immutable: create and delete only.
       match /chunks/{chunkId} {
-        allow read: if true;
+        allow read: if isAuthenticated();
 
-        // Use getAfter() so atomic writeBatch(db) uploads of note + chunks succeed
-        allow create, update: if isAuthenticated()
-          && getAfter(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid
+        allow create: if isVerified()
+          && noteUploaderIs(noteId)
+          && request.resource.data.keys().hasOnly(['index', 'data'])
+          && request.resource.data.index is int
+          && request.resource.data.index >= 0
+          && request.resource.data.index <= 14
           && request.resource.data.data is string
+          && request.resource.data.data.size() > 0
           && request.resource.data.data.size() <= 768000;
 
-        // Separate delete rule because request.resource is null during deletions
-        allow delete: if isAuthenticated()
-          && get(/databases/$(database)/documents/notes/$(noteId)).data.uploaderId == request.auth.uid;
+        // Delete is checked against the existing chunk and the parent note.
+        // request.resource is null on delete, so it must not be referenced here.
+        allow delete: if isAuthenticated() && noteUploaderIs(noteId);
       }
     }
 
     match /conversations/{conversationId} {
-      allow read, update, delete: if isAuthenticated() && request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+
+      allow create: if isVerified()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
+
+      // Participants cannot be changed after the conversation exists.
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants;
 
       match /messages/{messageId} {
-        // Use getAfter() so creating a conversation and sending the first message work cleanly
         allow read: if isAuthenticated()
           && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
-        allow create, update, delete: if isAuthenticated()
-          && request.auth.uid in getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+
+        // Messages are append-only. The sender must be the signed-in user.
+        allow create: if isVerified()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
+          && request.resource.data.recipientId in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
       }
     }
   }
