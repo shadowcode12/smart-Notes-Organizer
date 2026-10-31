@@ -1,12 +1,14 @@
-import { auth, db, firebaseReady, isLocalFallbackError, resolvePagePath } from '../config/firebase-config.js';
+import { auth, db, firebaseReady, authPersistenceReady, isLocalFallbackError, resolvePagePath } from '../config/firebase-config.js';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const api = window.SmartNotes ||= {};
 const SESSION_KEY = 'smartnotes-local-session';
+const FIREBASE_USER_CACHE_KEY = 'smartnotes-firebase-user';
 const USERS_KEY = 'smartnotes-local-users';
 let localMode = !firebaseReady;
 const listeners = new Set();
+let authReadyPromise = null;
 const sanitizeText = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 120);
 
 const message = (text, error = true) => {
@@ -20,13 +22,45 @@ const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getIt
 const localUsers = () => readJson(USERS_KEY, []);
 const saveUsers = users => localStorage.setItem(USERS_KEY, JSON.stringify(users));
 const localSession = () => readJson(SESSION_KEY, null);
+const cachedFirebaseUser = () => readJson(FIREBASE_USER_CACHE_KEY, null);
 const saveSession = user => localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+const saveFirebaseUser = user => user ? localStorage.setItem(FIREBASE_USER_CACHE_KEY, JSON.stringify(userFromRecord(user))) : null;
 const clearSession = () => localStorage.removeItem(SESSION_KEY);
+const clearFirebaseUser = () => localStorage.removeItem(FIREBASE_USER_CACHE_KEY);
 const notify = () => listeners.forEach(listener => listener(currentUser()));
 const userFromRecord = record => ({ uid: record.uid, email: record.email, displayName: record.displayName, provider: record.provider || 'local' });
 function enableLocalMode(error) { if (localMode) return; localMode = true; console.warn('Firebase API key is unavailable. SmartNotes switched to local mode.', error); notify(); }
 
-export const currentUser = () => localMode ? localSession() : auth?.currentUser || null;
+export const currentUser = () => localMode ? localSession() : auth?.currentUser || cachedFirebaseUser() || null;
+export function waitForAuthReady() {
+  if (!auth) return Promise.resolve(localSession());
+  if (!authReadyPromise) {
+    authReadyPromise = authPersistenceReady.then(async () => {
+      if (typeof auth.authStateReady === 'function') {
+        await auth.authStateReady();
+        return auth.currentUser || null;
+      }
+      if (auth.currentUser) return auth.currentUser;
+      return new Promise(resolve => {
+        let settled = false;
+        let unsubscribe;
+        const finish = user => {
+          if (settled) return;
+          settled = true;
+          unsubscribe?.();
+          if (user) saveFirebaseUser(user);
+          resolve(user || null);
+        };
+        unsubscribe = onAuthStateChanged(auth, user => {
+          if (user) return finish(user);
+          if (!cachedFirebaseUser()) return finish(null);
+          setTimeout(() => finish(auth.currentUser || null), 250);
+        });
+      });
+    });
+  }
+  return authReadyPromise;
+}
 export async function signUp(email, password, displayName = '') {
   const normalizedPassword = String(password || '');
   const hasUpper = /[A-Z]/.test(normalizedPassword);
@@ -42,6 +76,7 @@ export async function signUp(email, password, displayName = '') {
     saveUsers([...users, user]); saveSession(userFromRecord(user)); notify(); return currentUser();
   }
   try {
+    await authPersistenceReady;
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const safeName = sanitizeText(displayName);
     if (safeName) await updateProfile(result.user, { displayName: safeName });
@@ -70,36 +105,55 @@ export async function logIn(email, password) {
     if (!user) throw new Error('Email or password is incorrect.');
     saveSession(userFromRecord(user)); notify(); return currentUser();
   }
-  try { return await syncProfile((await signInWithEmailAndPassword(auth, email, password)).user); }
+  try { await authPersistenceReady; return await syncProfile((await signInWithEmailAndPassword(auth, email, password)).user); }
   catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); return logIn(email, password); }
 }
 export async function signInWithGoogle() {
   if (localMode) { const user = { uid: 'local-google-user', email: 'student@gmail.com', displayName: 'Google Student', provider: 'google' }; saveSession(user); notify(); return user; }
   try {
+    await authPersistenceReady;
     const result = await signInWithPopup(auth, new GoogleAuthProvider());
     await syncProfile(result.user);
     return result.user;
   } catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); return signInWithGoogle(); }
 }
-export async function logOut() { if (localMode) { clearSession(); notify(); return; } try { await signOut(auth); } catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); clearSession(); notify(); } }
+export async function logOut() {
+  if (localMode) { clearSession(); clearFirebaseUser(); notify(); return; }
+  try { await signOut(auth); clearFirebaseUser(); }
+  catch (error) { if (!isLocalFallbackError(error)) throw error; enableLocalMode(error); clearSession(); clearFirebaseUser(); notify(); }
+}
 export function onUserChange(callback) {
   listeners.add(callback);
   if (localMode) { callback(currentUser()); return () => listeners.delete(callback); }
   return onAuthStateChanged(auth, user => {
+    if (user) saveFirebaseUser(user);
     if (user) syncProfile(user).catch(error => console.warn('Could not sync user profile.', error));
     callback(user);
   }, error => {
     if (isLocalFallbackError(error)) { enableLocalMode(error); callback(currentUser()); }
   });
 }
-export function requireAuth(redirect = 'login.html') { return new Promise(resolve => onUserChange(user => { if (!user && redirect) location.href = resolvePagePath(redirect); resolve(user || null); })); }
-export function requireGuest(redirect = 'index.html') { return new Promise(resolve => onUserChange(user => { if (user && redirect) location.href = resolvePagePath(redirect); else resolve(!user); })); }
+export async function requireAuth(redirect = 'login.html') {
+  const user = await waitForAuthReady();
+  if (!user && redirect) location.href = resolvePagePath(redirect);
+  return user || null;
+}
+export async function requireGuest(redirect = 'index.html') {
+  const user = await waitForAuthReady();
+  if (user && redirect) location.href = resolvePagePath(redirect);
+  return !user;
+}
 export function initAuthGuard() {
-  const protectedPage = ['dashboard.html', 'notes.html', 'chats.html'].some(page => window.location.pathname.endsWith(`/${page}`) || window.location.pathname.endsWith(page));
-  if (!protectedPage) return () => { };
-  return onUserChange(user => {
-    if (!user) window.location.replace(resolvePagePath('login.html'));
+  let active = true;
+  waitForAuthReady().then(user => {
+    if (!active) return;
+    const page = window.location.pathname.split('/').pop().toLowerCase();
+    const protectedPage = ['dashboard.html', 'notes.html', 'chats.html'].includes(page);
+    const authPage = ['login.html', 'signup.html'].includes(page);
+    if (protectedPage && !user) window.location.replace(resolvePagePath('login.html'));
+    if (authPage && user) window.location.replace(resolvePagePath('notes.html'));
   });
+  return () => { active = false; };
 }
 export async function requestPasswordReset(email) {
   const normalizedEmail = String(email || '').trim();
@@ -196,6 +250,6 @@ export function bindNavbar() {
     });
   });
 }
-api.auth = { currentUser, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, resendVerificationEmail, isLocalMode: () => localMode };
+api.auth = { currentUser, waitForAuthReady, signUp, logIn, signInWithGoogle, logOut, onUserChange, requireAuth, requireGuest, initAuthGuard, requestPasswordReset, resendVerificationEmail, isLocalMode: () => localMode };
 initAuthGuard();
 bindAuthForms(); bindNavbar();
