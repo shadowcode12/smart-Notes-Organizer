@@ -1,0 +1,16 @@
+{
+  "name": "smartnotes-functions",
+  "private": true,
+  "description": "Cloud Functions for SmartNotes (chat email notifications)",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "check": "node --check index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.0.1"
+  }
+}

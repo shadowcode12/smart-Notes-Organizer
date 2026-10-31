@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Note files live at notes/{uid}/{noteId}/{fileName}.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /notes/{uid}/{noteId}/{fileName} {
+      // Any signed-in user can download a shared note.
+      allow read: if request.auth != null;
+
+      // Only the owner, with a verified email, can upload, and only up to the 5 MB limit.
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && request.resource.size > 0
+        && request.resource.size <= 5242880;
+
+      // Owners can remove their own file (for example when deleting a note). Files are never overwritten.
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow update: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
