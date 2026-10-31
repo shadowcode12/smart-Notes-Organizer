@@ -1,7 +1,8 @@
-// Firebase Auth + Firestore. Cloud Storage is intentionally unused on the Spark plan.
+// Firebase Auth + Firestore + Cloud Storage (file bytes). Storage needs the Blaze plan; without it uploads fall back to Firestore chunks.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getStorage } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js';
 
 export const firebaseConfig = window.SMART_NOTES_FIREBASE_CONFIG || {
@@ -33,6 +34,7 @@ export function isLocalFallbackError(error) {
 export const useLocalMode = placeholderPattern.test(firebaseConfig.apiKey || '') || (firebaseConfig.apiKey || '').length < 20;
 export let auth = null;
 export let db = null;
+export let storage = null;
 export let appCheck = null;
 export let authPersistenceReady = Promise.resolve();
 
@@ -45,6 +47,11 @@ if (!useLocalMode) {
       console.warn('Could not enable persistent authentication:', error);
     });
     db = getFirestore(app);
+    try {
+      storage = getStorage(app);
+    } catch (storageError) {
+      console.warn('Cloud Storage unavailable; using Firestore chunks.', storageError);
+    }
 
     const recaptchaSiteKey = window.FIREBASE_RECAPTCHA_SITE_KEY || window.SMART_NOTES_RECAPTCHA_SITE_KEY;
     if (recaptchaSiteKey && typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {

@@ -1,5 +1,6 @@
-import { auth, db, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
+import { auth, db, storage, firebaseReady, isLocalFallbackError } from '../config/firebase-config.js';
 import { addDoc, collection, getDoc, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, doc, getDocs, where, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
 
 const api = window.SmartNotes ||= {};
 const ext = name => name.split('.').pop().toLowerCase();
@@ -126,6 +127,23 @@ const makeThumbnail = async file => {
   return '';
 };
 const mapNoteSnapshot = docSnap => { const data = docSnap.data(); return { ...data, localId: data.id || docSnap.id, id: docSnap.id, firestoreDocId: docSnap.id }; };
+// Cloud Storage path is owner-scoped so storage.rules can check the uid in the path.
+const safeStorageName = name => sanitizeText(name, 180).replace(/[\/\\"]/g, '_') || 'file';
+async function uploadToStorage(uid, noteId, file) {
+  if (!storage) return '';
+  const path = `notes/${uid}/${noteId}/${safeStorageName(file.name)}`;
+  try {
+    await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream', contentDisposition: 'attachment' });
+    return path;
+  } catch (error) {
+    console.warn('Storage upload unavailable; saving file as Firestore chunks instead.', error);
+    return '';
+  }
+}
+async function removeStoredFile(path) {
+  if (!storage || !path) return;
+  try { await deleteObject(ref(storage, path)); } catch (error) { console.warn('Could not remove stored file.', error); }
+}
 export async function uploadNote(file, metadata = {}) {
   if (!activeUser()) throw new Error('Sign in to upload notes.');
   if (!localMode && !activeUser().emailVerified) throw new Error('Verify your email address before uploading. Check your inbox for the verification link.');
@@ -145,10 +163,18 @@ export async function uploadNote(file, metadata = {}) {
     const noteRef = doc(collection(db, 'notes'));
     note.id = noteRef.id;
     note.firestoreDocId = noteRef.id;
+    // Prefer Cloud Storage for the file bytes. If Storage is not enabled or the upload fails, keep the chunked fallback.
+    const storagePath = await uploadToStorage(activeUser().uid, noteRef.id, file);
+    if (storagePath) Object.assign(note, { storageMode: 'storage', storagePath, isChunked: false, chunkCount: 0 });
     const batch = writeBatch(db);
     batch.set(noteRef, { ...note, createdAt: serverTimestamp() });
-    await batch.commit();
-    await saveLargeFileChunks(noteRef.id, dataUrl);
+    try {
+      await batch.commit();
+    } catch (commitError) {
+      if (storagePath) await removeStoredFile(storagePath);
+      throw commitError;
+    }
+    if (!storagePath) await saveLargeFileChunks(noteRef.id, dataUrl);
     return note;
   } catch (error) {
     if (!isLocalFallbackError(error)) throw error;
@@ -195,7 +221,7 @@ async function getChunkedDataUrl(note) { const cacheKey = note.firestoreDocId ||
 export async function getNoteDataUrl(note) { if (note.fileDataUrl) return note.fileDataUrl; if (note.isChunked || note.storageMode === 'chunks' || note.chunkCount || note.chunks) return getChunkedDataUrl(note); throw new Error('This earlier test note has no attached file data. Please re-upload the file to test downloading.'); }
 async function findNote(noteIdOrNote) { if (typeof noteIdOrNote !== 'string') return noteIdOrNote; const found = currentNotes.find(note => note.id === noteIdOrNote || note.localId === noteIdOrNote) || readNotes().find(note => note.id === noteIdOrNote || note.localId === noteIdOrNote); if (found) return found; const cached = await readLocalFile(noteIdOrNote); if (cached) return { id: noteIdOrNote, fileDataUrl: cached }; if (!localMode) { const snapshot = await getDoc(doc(db, 'notes', noteIdOrNote)); if (snapshot.exists()) return mapNoteSnapshot(snapshot); const realDocId = await resolveFirestoreDocId(noteIdOrNote); if (realDocId) return mapNoteSnapshot(await getDoc(doc(db, 'notes', realDocId))); } throw new Error('This earlier test note has no attached file data. Please re-upload the file to test downloading.'); }
 const base64Bytes = value => Uint8Array.from(atob(String(value).split(',').pop().replace(/\s/g, '')), character => character.charCodeAt(0));
-export async function downloadNoteFile(noteIdOrNote) { if (!activeUser()) throw new Error('Sign in before downloading notes.'); const note = await findNote(noteIdOrNote); const dataUrl = await getNoteDataUrl(note); const blob = new Blob([base64Bytes(dataUrl)], { type: note.mimeType || note.contentType || 'application/pdf' }); const blobUrl = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = note.fileName || note.title || `${note.id || 'note'}.${note.fileExt || note.extension || 'pdf'}`; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 10000); }
+export async function downloadNoteFile(noteIdOrNote) { if (!activeUser()) throw new Error('Sign in before downloading notes.'); const note = await findNote(noteIdOrNote); if (note.storagePath) { if (!storage) throw new Error('File storage is unavailable right now. Please try again later.'); const url = await getDownloadURL(ref(storage, note.storagePath)); const anchor = document.createElement('a'); anchor.href = url; anchor.rel = 'noopener'; document.body.append(anchor); anchor.click(); anchor.remove(); return; } const dataUrl = await getNoteDataUrl(note); const blob = new Blob([base64Bytes(dataUrl)], { type: note.mimeType || note.contentType || 'application/pdf' }); const blobUrl = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = note.fileName || note.title || `${note.id || 'note'}.${note.fileExt || note.extension || 'pdf'}`; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 10000); }
 export async function downloadNote(note, callback) { try { await downloadNoteFile(note); callback?.(null); } catch (error) { callback?.(error); throw error; } }
 export async function deleteNote(note) {
   const user = activeUser();
@@ -213,11 +239,13 @@ export async function deleteNote(note) {
     if (!docId) throw new Error('The note could not be found.');
     noteSnapshot = await getDoc(doc(db, 'notes', docId));
   }
+  const storedPath = noteSnapshot.data()?.storagePath || note.storagePath;
   const chunks = await getDocs(collection(db, 'notes', docId, 'chunks'));
   const batch = writeBatch(db);
   chunks.docs.forEach(item => batch.delete(item.ref));
   batch.delete(doc(db, 'notes', docId));
   await batch.commit();
+  await removeStoredFile(storedPath);
 }
 export function bindUploadWidget(widget = document.querySelector('[data-upload-widget]')) {
   if (!widget || widget.dataset.firebaseUploadBound) return;

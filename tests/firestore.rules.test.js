@@ -153,6 +153,17 @@ test('search terms are optional but limited to 40 entries', async () => {
   await assertFails(setDoc(doc(uploader, 'notes/s4'), { ...note(), searchTerms: 'not a list' }));
 });
 
+test('storage path is optional but must sit in the uploader folder', async () => {
+  const uploader = user('uploader');
+  await assertSucceeds(
+    setDoc(doc(uploader, 'notes/p1'), { ...note(), storagePath: 'notes/uploader/p1/file.pdf' })
+  );
+  await assertFails(
+    setDoc(doc(uploader, 'notes/p2'), { ...note(), storagePath: 'notes/someone-else/p2/file.pdf' })
+  );
+  await assertFails(setDoc(doc(uploader, 'notes/p3'), { ...note(), storagePath: 42 }));
+});
+
 test('thumbnails are optional but limited to 100000 characters', async () => {
   const uploader = user('uploader');
   await assertSucceeds(

@@ -39,7 +39,11 @@ service cloud.firestore {
         && (!('searchTerms' in request.resource.data)
           || (request.resource.data.searchTerms is list && request.resource.data.searchTerms.size() <= 40))
         && (!('thumbnail' in request.resource.data)
-          || (request.resource.data.thumbnail is string && request.resource.data.thumbnail.size() <= 100000));
+          || (request.resource.data.thumbnail is string && request.resource.data.thumbnail.size() <= 100000))
+        && (!('storagePath' in request.resource.data)
+          || (request.resource.data.storagePath is string
+            && request.resource.data.storagePath.size() <= 300
+            && request.resource.data.storagePath.matches('notes/' + request.auth.uid + '/.+')));
 
       // Owner can edit metadata only. Ownership, file size and inline data are locked.
       allow update: if isUploader()
