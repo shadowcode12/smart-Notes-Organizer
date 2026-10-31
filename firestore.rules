@@ -35,7 +35,9 @@ service cloud.firestore {
         && request.resource.data.size is int
         && request.resource.data.size > 0
         && request.resource.data.size <= 5242880
-        && !('fileDataUrl' in request.resource.data);
+        && !('fileDataUrl' in request.resource.data)
+        && (!('searchTerms' in request.resource.data)
+          || (request.resource.data.searchTerms is list && request.resource.data.searchTerms.size() <= 40));
 
       // Owner can edit metadata only. Ownership, file size and inline data are locked.
       allow update: if isUploader()

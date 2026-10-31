@@ -137,3 +137,18 @@ test('conversation participants control messages and immutable fields', async ()
     )
   );
 });
+
+test('search terms are optional but limited to 40 entries', async () => {
+  const uploader = user('uploader');
+  await assertSucceeds(
+    setDoc(doc(uploader, 'notes/s1'), { ...note(), searchTerms: ['algorithms', 'graphs'] })
+  );
+  await assertSucceeds(setDoc(doc(uploader, 'notes/s2'), note()));
+  await assertFails(
+    setDoc(doc(uploader, 'notes/s3'), {
+      ...note(),
+      searchTerms: Array.from({ length: 41 }, (_, i) => `term${i}`)
+    })
+  );
+  await assertFails(setDoc(doc(uploader, 'notes/s4'), { ...note(), searchTerms: 'not a list' }));
+});
